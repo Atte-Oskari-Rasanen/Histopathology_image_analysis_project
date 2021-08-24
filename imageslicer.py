@@ -8,42 +8,6 @@ Created on Tue Aug 24 13:37:57 2021
 
 from PIL import Image
 import numpy as np
-import image_slicer
-from skimage.io import imread, imshow
-
-import os
-
-def crop(infile,height,width):
-    im = Image.open(infile)
-    imgwidth, imgheight = im.size
-    for i in range(imgheight//height):
-        for j in range(imgwidth//width):
-            box = (j*width, i*height, (j+1)*width, (i+1)*height)
-            yield im.crop(box)
-
-#if __name__=='__main__':
-infile='/home/atte/Documents/googletest.jpeg'
-# print(infile.shape)
-
-height=500
-width=500
-start_num=1
-print('starting the loop...')
-for k,piece in enumerate(crop(infile,height,width),start_num):
-    img=Image.new('RGB', (height,width), 255)
-    img.paste(piece)
-    path=os.path.join("IMG-%s.png" % k)
-    img.save(path)
-    print("image saved into: " + path)
-
-large_image = Image.open('/home/atte/Documents/googletest.jpeg')
-large_image=np.array(large_image)
-h = large_image.shape[1]
-new_size = (h,h,3)
-im = np.resize(large_image,new_size)
-image_slicer.slice(im, 14)
-
-
 
 #####
 #apply this to large images, train the model with these smaller patches
