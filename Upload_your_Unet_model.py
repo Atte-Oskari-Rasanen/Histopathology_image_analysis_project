@@ -86,40 +86,128 @@ import PIL
 from PIL import Image, ImageOps
 import cv2
 from keras.utils import normalize
-im_path = "/home/inf-54-2020/experimental_cop/saved_images/reconstruction_Earlier_10x.jpg"
 
-#try out by adding normalization too!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-def prediction(model, image, patch_size):
-    segm_img = np.zeros(image.shape[:2])  #Array with zeros to be filled with segmented values
-    patch_num=1
-    for i in range(0, image.shape[0], 128):   #Steps of 256
-        for j in range(0, image.shape[1], 128):  #Steps of 256
-            #print(i, j)
-            single_patch = image[i:i+patch_size, j:j+patch_size]
-            #single_patch_norm = np.expand_dims(normalize(np.array(single_patch), axis=1),2)
-            single_patch_shape = single_patch.shape[:2]
-            single_patch_input = np.expand_dims(single_patch, 0)
-            single_patch_prediction = (model.predict(single_patch_input)[0,:,:,0]).astype(np.uint8)
-            segm_img[i:i+single_patch_shape[0], j:j+single_patch_shape[1]] += cv2.resize(single_patch_prediction, single_patch_shape[::-1])
-          
-            print("Finished processing patch number ", patch_num, " at position ", i,j)
-            patch_num+=1
-    return segm_img
-large_image = Image.open('/home/inf-54-2020/experimental_cop/YZ003_SD_#17_HuNu-DAB-Ni_hCOL1A1-VB_30_min_10X.tif')
-large_image=np.array(large_image)
-h = large_image.shape[1]
-new_size = (h,h,3)
-large_image = np.resize(large_image,new_size)
-print(large_image.shape)
+from PIL import Image
+import tensorflow as tf
+import os
+import random
+import numpy as np
+ 
+from tqdm import tqdm 
+import pickle
+from keras.utils import normalize
+from skimage.io import imread, imshow
+from skimage.transform import resize
+import matplotlib.pyplot as plt
+import re
+from tensorflow import keras
+
+#####
+#apply this to large images, train the model with these smaller patches
+#when predicting on large images, break the image into smaller patches like this,
+#then apply the processes like model.predict on these arrays, append into segm_images
+#and then save as a whole slide image
+
+import cv2
+cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/New_model_bs128.h5"
 model_segm = keras.models.load_model(cp_save_path)
 
-model_segm.load_weights(cp_save_path)
-patch_size = 128
-segmented_image = prediction(model_segm, large_image, patch_size)
-plt.imsave('/home/inf-54-2020/experimental_cop/saved_images/reconstruction_Earlier_10x.jpg', segmented_image, cmap='gray')
-print('All done!')
-# large_image = ImageOps.grayscale(large_image)
-large_image = np.array(large_image)
+im_path = "/home/inf-54-2020/experimental_cop/Train_H_Final/Train/"
+
+path_to_img = '/home/atte/Documents/googletest.jpeg'
+save_path = '/home/atte/Documents/'
+img = cv2.imread(im_path + '20x_1_H_Final_1.jpg')
+#print(type(img))
+img = np.asarray(img)
+img_h, img_w, _ = img.shape
+img = np.expand_dims(img, 0)
+
+#img = np.resize(img, (500,500))
+print(img.shape)
+split_width = 128
+split_height = 128
+
+
+def start_points(size, split_size, overlap=0):
+    points = [0]
+    stride = int(split_size * (1-overlap))
+    counter = 1
+    while True:
+        pt = stride * counter
+        if pt + split_size >= size:
+            points.append(size - split_size)
+            break
+        else:
+            points.append(pt)
+        counter += 1
+    return points
+
+
+X_points = start_points(img_w, split_width, 0.1)
+Y_points = start_points(img_h, split_height, 0.1)
+
+splitted_images = []
+
+for i in Y_points:
+    for j in X_points:
+        split = img[i:i+split_height, j:j+split_width]
+        print(split.shape)
+        #im = Image.fromarray(segm)
+        #im.save(im_path + str(i) + str(j) +'_20x_1_remade.png')
+        splitted_images.append(split) #now you have created a mask for the patch
+segm_patches = []
+for patch in splitted_images:
+    print(patch.shape)
+    segm = model_segm.predict(patch)
+    print(segm.shape)
+    segm_patches.append(segm)
+
+
+#rebuild phase
+import numpy as np
+final_image = np.zeros_like(img)
+
+index = 0
+for i in Y_points:
+    for j in X_points:
+        final_image[i:i+split_height, j:j+split_width] = segm_patches[index]
+        index += 1
+
+im = Image.fromarray(final_image)
+im.save(save_path + '/20x_1_remade.png')
+
+#try out by adding normalization too!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# def prediction(model, image, patch_size):
+#     segm_img = np.zeros(image.shape[:2])  #Array with zeros to be filled with segmented values
+#     patch_num=1
+#     for i in range(0, image.shape[0], 128):   #Steps of 256
+#         for j in range(0, image.shape[1], 128):  #Steps of 256
+#             #print(i, j)
+#             single_patch = image[i:i+patch_size, j:j+patch_size]
+#             #single_patch_norm = np.expand_dims(normalize(np.array(single_patch), axis=1),2)
+#             single_patch_shape = single_patch.shape[:2]
+#             single_patch_input = np.expand_dims(single_patch, 0)
+#             single_patch_prediction = (model.predict(single_patch_input)[0,:,:,0]).astype(np.uint8)
+#             segm_img[i:i+single_patch_shape[0], j:j+single_patch_shape[1]] += cv2.resize(single_patch_prediction, single_patch_shape[::-1])
+          
+#             print("Finished processing patch number ", patch_num, " at position ", i,j)
+#             patch_num+=1
+#     return segm_img
+# large_image = Image.open('/home/inf-54-2020/experimental_cop/YZ003_SD_#17_HuNu-DAB-Ni_hCOL1A1-VB_30_min_10X.tif')
+# large_image=np.array(large_image)
+# h = large_image.shape[1]
+# new_size = (h,h,3)
+# large_image = np.resize(large_image,new_size)
+# print(large_image.shape)
+# model_segm = keras.models.load_model(cp_save_path)
+
+# model_segm.load_weights(cp_save_path)
+# patch_size = 128
+# segmented_image = prediction(model_segm, large_image, patch_size)
+# plt.imsave('/home/inf-54-2020/experimental_cop/saved_images/reconstruction_Earlier_10x.jpg', segmented_image, cmap='gray')
+# print('All done!')
+# # large_image = ImageOps.grayscale(large_image)
+# large_image = np.array(large_image)
 # print(large_image)
 
 # #large_image = np.expand_dims(large_image, axis=0)
