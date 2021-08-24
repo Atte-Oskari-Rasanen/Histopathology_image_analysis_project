@@ -7,11 +7,10 @@ Created on Tue Aug 24 13:37:57 2021
 """
 
 from PIL import Image
-
+from numpy import np
 import image_slicer
 
-large_image = Image.open('/home/atte/Documents/googletest.jpeg)
-large_image = Image.open('/home/atte/Documents')
+large_image = Image.open('/home/atte/Documents/googletest.jpeg')
 large_image=np.array(large_image)
 h = large_image.shape[1]
 new_size = (h,h,3)
