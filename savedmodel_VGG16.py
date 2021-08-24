@@ -30,16 +30,17 @@ from keras.layers import Conv2D
 import os
 from keras.applications.vgg16 import VGG16
 
-IMG_HEIGHT = 128 #Resize images (height  = X, width = Y)
-IMG_WIDTH = 128
+IMG_HEIGHT = 244 #Resize images (height  = X, width = Y)
+IMG_WIDTH = 244
 IMG_CHANNELS = 3
+cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model.h5"
 
-X_train = np.load('/home/inf-54-2020/experimental_cop/scripts/X_train_size128.npy')
-Y_train = np.load('/home/inf-54-2020/experimental_cop/scripts/Y_train_size128.npy')
+X_train = np.load('/home/inf-54-2020/experimental_cop/scripts/kd_X_train_size128.npy')
+Y_train = np.load('/home/inf-54-2020/experimental_cop/scripts/kd_Y_train_size128.npy')
 
 Y_train = np.expand_dims(Y_train, axis=3) #May not be necessary.. leftover from previous code 
 
-
+print('Starting...')
 #Load VGG16 model wothout classifier/fully connected layers
 #Load imagenet weights that we are going to use as feature generators
 VGG_model = VGG16(weights='imagenet', include_top=False, input_shape=(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
@@ -101,28 +102,29 @@ print('df prior to adding Y')
 #print(dataset)
 #print(dataset.info)
 dataset['Label'] = Y
-print(dataset['Label'].unique())
-print(dataset['Label'].value_counts())
+print('print the label column')
+print(dataset['Label'])
+#print(dataset['Label'].value_counts())
 
 ##If we do not want to include pixels with value 0 
 ##e.g. Sometimes unlabeled pixels may be given a value 0.
-dataset = dataset[dataset['Label'] != 0]
-
+#dataset = dataset[dataset['Label'] != 0]
+print('datasets done')
 #Redefine X and Y for Random Forest
 X_for_RF = dataset.drop(labels = ['Label'], axis=1)
 Y_for_RF = dataset['Label']
 
-print('data types:')
+print('prepping X and Y trains for the Rf...')
 #print(X_for_RF.dtypes)
 #print(Y_for_RF.dtypes)
 
 X_for_RF = X_for_RF.astype('int32')
 Y_for_RF = X_for_RF.astype('int32')
-
+print('Starting up random forest...')
 #RANDOM FOREST
 from sklearn.ensemble import RandomForestClassifier
 model = RandomForestClassifier(n_estimators = 50, random_state = 42)
-
+print('train the model on the data')
 # Train the model on training data
 model.fit(X_for_RF, Y_for_RF) 
 
@@ -152,3 +154,4 @@ prediction = model.predict(X_test_feature)
 prediction_image = prediction.reshape(IMG_HEIGHT,IMG_WIDTH,IMG_CHANNELS)
 plt.imshow(prediction_image, cmap='gray')
 plt.imsave('/home/inf-54-2020/experimental_cop/360_segmented.jpg', prediction_image, cmap='gray')
+print('All done!')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Aug  9 16:56:35 2021
+Created on Sun Aug 22 18:08:17 2021
 
 @author: atte
 """
@@ -12,19 +12,46 @@ import random
 import numpy as np
  
 from tqdm import tqdm 
-import pickle
-from keras.utils import normalize
+
 from skimage.io import imread, imshow
 from skimage.transform import resize
+import matplotlib
+matplotlib.use('Agg')
+import cv2
 import matplotlib.pyplot as plt
-import re
+
 seed = 42
 np.random.seed = seed
 
-IMG_WIDTH = 128
-IMG_HEIGHT = 128
+IMG_WIDTH = 244
+IMG_HEIGHT = 244
 IMG_CHANNELS = 3
 
+TRAIN_PATH = '/home/inf-54-2020/experimental_cop/kaggle_data/'
+#TEST_PATH = 'stage1_test/'
+X_test = np.load('/home/inf-54-2020/experimental_cop/scripts/X_test_size128.npy')
+train_ids = next(os.walk(TRAIN_PATH))[1]
+#test_ids = next(os.walk(TEST_PATH))[1]
+
+X_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
+Y_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+
+print('Resizing training images and masks')
+for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
+    path = TRAIN_PATH + id_
+    img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
+    img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+    X_train[n] = img  #Fill empty X_train with values from img
+    mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+    for mask_file in next(os.walk(path + '/masks/'))[2]:
+        mask_ = imread(path + '/masks/' + mask_file)
+        mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant',  
+                                      preserve_range=True), axis=-1)
+        mask = np.maximum(mask, mask_)  
+            
+    Y_train[n] = mask   
+
+##########################
 TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/"
 M_TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Mask/"
 
@@ -48,29 +75,6 @@ Y_train = np.zeros((no_of_files, IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
 
 X_train=[]
 Y_train=[]
-# =============================================================================
-# for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
-#     print(n)
-#     print(id_)
-#     path = TRAIN_IMG_DIR + id_
-#     print(path)
-#     for f in os.listdir(path): #inside the specific dir
-#         img_path=path + '/' + f   #create first of dic values, i.e the path
-#         print(img_path)
-#         img = imread(img_path)[:,:,:IMG_CHANNELS]
-#         img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-#         X_train[n] = img  #Fill empty X_train with values from img
-#         mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-# 
-#     for mask_file in next(os.walk(path + '/masks/'))[2]:
-#         mask_ = imread(path + '/masks/' + mask_file)
-#         mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant',  
-#                                       preserve_range=True), axis=-1)
-#         mask = np.maximum(mask, mask_)  
-#             
-#     Y_train[n] = mask   
-# 
-# =============================================================================
 n1 = 0
 n2 = 0
 print('starting the loops...')
@@ -98,7 +102,7 @@ for root, subdirectories, files in sorted(os.walk(TRAIN_IMG_DIR)):
                 n1 += 1
    
 X_train=np.array(X_train)
-np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size128.npy', X_train)
+#np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size128.npy', X_train)
 
 print('Images saved into array!')
 n2 = 0
@@ -125,34 +129,34 @@ for root, subdirectories, files in sorted(os.walk(M_TRAIN_IMG_DIR)):
                 continue
 Y_train=np.array(Y_train)
 
-np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size128.npy', Y_train)
+#np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size128.npy', Y_train)
 
 print('masks saved into array!')
-    
-#convert X and Y train into numpy arrays
-X_train=np.array(X_train)
-print('X_train:')
-print(X_train.shape)
-print(X_train.size)
-Y_train=np.array(Y_train)
-print('Y_train:')
-print(X_train.shape)
-print(X_train.size)
-
-
+###########
 # test images
 #X_test = np.zeros((len(test_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
+# sizes_test = []
+# print('Resizing test images') 
+# for n, id_ in tqdm(enumerate(test_ids), total=len(test_ids)):
+#     path = TEST_PATH + id_
+#     img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]
+#     sizes_test.append([img.shape[0], img.shape[1]])
+#     img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+#     X_test[n] = img
+
+VAL_IMG_DIR = "/home/inf-54-2020/experimental_cop/Val_H_Final/Images/"
 X_test=[]
 sizes_test = []
 n3 = 0
+print('starting...')
 for root, subdirectories, files in tqdm(os.walk(VAL_IMG_DIR)): #tqdm shows the progress bar of the for loop
     #print(root)
     for subdirectory in subdirectories:
     #    print(subdirectory)
         file_path = os.path.join(root, subdirectory)
-     #   print(file_path)
+      #   print(file_path)
         for f in os.listdir(file_path):
-            if not f.endswith('.tif'):
+            if not f.endswith('.png'):
                 continue
             img_path=file_path + '/' + f   #create first of dic values, i.e the path
             #print(img_path)
@@ -163,54 +167,23 @@ for root, subdirectories, files in tqdm(os.walk(VAL_IMG_DIR)): #tqdm shows the p
             X_test.append(img)
             #print(' loop of X_test done!')
 X_test = np.array(X_test)
-np.save('/home/inf-54-2020/experimental_cop/scripts/X_test_size128.npy', X_test)
+print(X_test.shape)
 
-print('Test files saved into array!')
-# X_mask = []
-# for root, subdirectories, files in tqdm(os.walk(M_VAL_IMG_DIR)): #tqdm shows the progress bar of the for loop
-#     #print(root)
-#     for subdirectory in subdirectories:
-#         print(subdirectory)
-#         file_path = os.path.join(root, subdirectory)
-#         print(file_path)
-#         for f in os.listdir(file_path):
-#             img_path=file_path + '/' + f   #create first of dic values, i.e the path
-#             #print(img_path)
-#             #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
-#             img = imread(img_path)[:,:,:IMG_CHANNELS]
-#             sizes_test.append([img.shape[0], img.shape[1]])
-#             img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-#             X_mask.append(img)
-
-# =============================================================================
-# print('Resizing test images') 
-# for n, id_ in tqdm(enumerate(test_ids), total=len(test_ids)):
-#     print(n)
-#     print(id_)
-#     path = VAL_IMG_DIR + id_
-#     img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]
-#     sizes_test.append([img.shape[0], img.shape[1]])
-#     img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-#     X_test[n] = img
-# =============================================================================
+np.save('/home/inf-54-2020/experimental_cop/scripts/kd_X_test_size244.npy', X_test)
+np.save('/home/inf-54-2020/experimental_cop/scripts/kd_X_train_size244.npy', X_train)
+np.save('/home/inf-54-2020/experimental_cop/scripts/kd_Y_train_size244.npy', Y_train)
 
 print('Done!')
 
-# image_x = random.randint(0, len(train_ids))
+image_x = random.randint(0, len(train_ids))
+imshow(X_train[image_x])
+#plt.show()
+imshow(np.squeeze(Y_train[image_x]))
+#plt.show()
+im_path = "/home/inf-54-2020/experimental_cop/saved_images/checkup.png"
 
-# imshow(X_train[image_x])
-# plt.show()
-# imshow(np.squeeze(Y_train[image_x]))
-# plt.show()
+plt.savefig(im_path)
 
-print('lengths of X_ train and Y_Train: ')
-print(len(X_train))
-print(len(Y_train))
-
-print('Building the model...')
-X_train = np.expand_dims(normalize(np.array(X_train), axis=1),3)
-Y_train = np.expand_dims(normalize(np.array(Y_train), axis=1),3)
-#Y_train = np.expand_dims(normalize(np.array(Y_train), axis=1),3)
 
 #Build the model
 inputs = tf.keras.layers.Input((IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
@@ -274,17 +247,20 @@ model.summary()
 
 ################################
 #Modelcheckpoint
-cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/New_model.h5"
-model.save(cp_save_path)
+cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model.h5"
+
 checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
-#model.save_weights(cp_save_path)
-print('Model built and saved')
 
 callbacks = [
         tf.keras.callbacks.EarlyStopping(patience=2, monitor='val_loss'),
         tf.keras.callbacks.TensorBoard(log_dir='logs')]
 
-results = model.fit(X_train, Y_train, validation_split=0.1, batch_size=16, epochs=50, use_multiprocessing=True, callbacks=callbacks)
+
+model.save(cp_save_path)
+checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
+#model.save_weights(cp_save_path)
+print('Model built and saved, now fitting it...')
+results = model.fit(X_train, Y_train, validation_split=0.1, batch_size=16, epochs=200, callbacks=callbacks)
 
 ####################################
 
@@ -301,37 +277,43 @@ preds_val_t = (preds_val > 0.5).astype(np.uint8)
 preds_test_t = (preds_test > 0.5).astype(np.uint8)
 
 
-saved_path1 = '/home/inf-54-2020/experimental_cop/saved_images/test.png'
-saved_path2 = '/home/inf-54-2020/experimental_cop/saved_images/test_mask.png'
-saved_path3 = '/home/inf-54-2020/experimental_cop/saved_images/test_pred.png'
-
-# Perform a sanity check on some random training samples
+#Perform a sanity check on some random training samples
 ix = random.randint(0, len(preds_train_t))
 imshow(X_train[ix])
-plt.savefig(saved_path1)
+im_path = "/home/inf-54-2020/experimental_cop/saved_images/X_traintest1.png"
+cv2.imwrite(im_path, ix)
+#plt.savefig(im_path)
+
 #plt.show()
+
 imshow(np.squeeze(Y_train[ix]))
-plt.savefig(saved_path2)
+im_path = "/home/inf-54-2020/experimental_cop/saved_images/Y_traintest1.png"
+plt.savefig(im_path)
+
 #plt.show()
 imshow(np.squeeze(preds_train_t[ix]))
-plt.savefig(saved_path3)
+im_path = "/home/inf-54-2020/experimental_cop/saved_images/preds_traintest1.png"
+plt.savefig(im_path)
+
 #plt.show()
-saved_path1 = '/home/inf-54-2020/experimental_cop/saved_images/test_Xtrain.png'
-saved_path2 = '/home/inf-54-2020/experimental_cop/saved_images/test_Ytrain.png'
-saved_path3 = '/home/inf-54-2020/experimental_cop/saved_images/test_pred2.png'
 
-
-# Perform a sanity check on some random validation samples
+#Perform a sanity check on some random validation samples
 ix = random.randint(0, len(preds_val_t))
 imshow(X_train[int(X_train.shape[0]*0.9):][ix])
-plt.savefig(saved_path1)
 
-#plt.show()
+im_path = "/home/inf-54-2020/experimental_cop/saved_images/preds_traintest1.png"
+plt.savefig(im_path)
+
+plt.show()
 imshow(np.squeeze(Y_train[int(Y_train.shape[0]*0.9):][ix]))
-plt.savefig(saved_path2)
-
-#plt.show()
+plt.show()
 imshow(np.squeeze(preds_val_t[ix]))
-plt.savefig(saved_path3)
+plt.show()
 
-#plt.show()
+
+
+
+
+
+
+
