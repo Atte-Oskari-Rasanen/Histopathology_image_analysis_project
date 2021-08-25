@@ -87,45 +87,55 @@ from PIL import Image, ImageOps
 import cv2
 from keras.utils import normalize
 
-from PIL import Image
 import tensorflow as tf
 import os
 import random
 import numpy as np
  
 from tqdm import tqdm 
-import pickle
-from keras.utils import normalize
+#from keras.utils import normalize
 from skimage.io import imread, imshow
 from skimage.transform import resize
 import matplotlib.pyplot as plt
 import re
 from tensorflow import keras
+from tifffile import imsave
 
 #####
 #apply this to large images, train the model with these smaller patches
 #when predicting on large images, break the image into smaller patches like this,
 #then apply the processes like model.predict on these arrays, append into segm_images
 #and then save as a whole slide image
-
 import cv2
+import scipy.misc
+
 cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/New_model_bs128.h5"
 model_segm = keras.models.load_model(cp_save_path)
 
 im_path = "/home/inf-54-2020/experimental_cop/Train_H_Final/Train/"
 
 path_to_img = '/home/atte/Documents/googletest.jpeg'
-save_path = '/home/atte/Documents/'
-img = cv2.imread(im_path + '20x_1_H_Final_1.jpg')
+save_path = "/home/inf-54-2020/experimental_cop/"
+#img = cv2.imread(im_path + '20x_1_H_Final_1.jpg')
+img = cv2.imread(save_path + 'YZ004_NR_G2_#15_hCOL1A1_10x__1_H_Final.jpg')
+#img = cv2.imread(save_path + 'test2.png')
+
 #print(type(img))
 img = np.asarray(img)
 img_h, img_w, _ = img.shape
-img = np.expand_dims(img, 0)
+print(img_h)
+print(img_w)
+#img = np.expand_dims(img, 0)
 
 #img = np.resize(img, (500,500))
 print(img.shape)
 split_width = 128
 split_height = 128
+#t = cv2.imread('/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/augmented_image_14/augmented_image_14_184.png')
+#t = np.resize(t,(128,128,3))
+#t = np.expand_dims(t,0)
+# r = model_segm(t)
+# r.save(save_path + 'r.png')
 
 
 def start_points(size, split_size, overlap=0):
@@ -145,24 +155,43 @@ def start_points(size, split_size, overlap=0):
 
 X_points = start_points(img_w, split_width, 0.1)
 Y_points = start_points(img_h, split_height, 0.1)
-
+#print(Y_points.shape)
 splitted_images = []
 
 for i in Y_points:
     for j in X_points:
         split = img[i:i+split_height, j:j+split_width]
-        print(split.shape)
+        split = np.expand_dims(split, 0)
+        #print(split.shape)
+        #split = split.astype(np.uint8)
+        #segm = model_segm.predict(split)
         #im = Image.fromarray(segm)
-        #im.save(im_path + str(i) + str(j) +'_20x_1_remade.png')
+        #im.save(im_path + str(i) + str(j) +'_10x_1_remade.png')
         splitted_images.append(split) #now you have created a mask for the patch
 segm_patches = []
+i = 0
 for patch in splitted_images:
-    print(patch.shape)
+    #print(patch.shape)
     segm = model_segm.predict(patch)
-    print(segm.shape)
+    #print(segm.shape)
+    #segm=np.asarray(segm)
+    #print(segm.shape)
+    im = np.squeeze(segm)  #need to get rid of the channel dim, otherwise PIL gives an error
+    
+    #segm = np.expand_dims(segm,0)
+    im = (im * 255).astype(np.uint8)
+    segm = (segm * 255).astype(np.uint8)
+
+    #print(segm)
+    im = Image.fromarray(im)
+    
+    #im = im.convert("L")
+    im.save(save_path + str(i) + 'patch_20x_1_remade.png')
+    i += 1
+    #print(type(segm))
     segm_patches.append(segm)
 
-
+print(segm_patches)
 #rebuild phase
 import numpy as np
 final_image = np.zeros_like(img)
@@ -172,10 +201,25 @@ for i in Y_points:
     for j in X_points:
         final_image[i:i+split_height, j:j+split_width] = segm_patches[index]
         index += 1
+        
+n=1
+#final_image = np.squeeze(final_image)  #need to get rid of the channel dim, otherwise PIL gives an error
+#print(final_image)
+#final_image = np.array(final_image)
+final_image = np.expand_dims(final_image,0)
 
-im = Image.fromarray(final_image)
-im.save(save_path + '/20x_1_remade.png')
+#segm=np.asarray(segm)
+#im = np.squeeze(segm)  #need to get rid of the channel dim, otherwise PIL gives an error
+im = Image.fromarray((final_image * 255).astype(np.uint8))
+#im = Image.fromarray(final_image)
 
+#scipy.misc.imsave(save_path + '20x_1_remade.png', final_image)
+
+#im = im.convert("L")
+#imsave(save_path + '20xremade.tif', final_image)
+final_image.save(save_path + '20x_1_remade.png')
+
+print('Done!')
 #try out by adding normalization too!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # def prediction(model, image, patch_size):
 #     segm_img = np.zeros(image.shape[:2])  #Array with zeros to be filled with segmented values
