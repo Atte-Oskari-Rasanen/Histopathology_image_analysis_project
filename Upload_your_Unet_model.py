@@ -45,19 +45,6 @@ np.random.seed = seed
 # X_test = np.array(X_test)
 # print(X_test.shape)
 
-# np.save('/home/inf-54-2020/experimental_cop/scripts/X_test_size128.npy', X_test)
-X_test = np.load('/home/inf-54-2020/experimental_cop/scripts/kd_X_test_size244.npy')
-#upload the numpy files as well as the saved model location
-#X_train = np.load('/home/inf-54-2020/experimental_cop/scripts/X_train_size128_Unet.npy')
-#Y_train = np.load('/home/inf-54-2020/experimental_cop/scripts/Y_train_size128_Unet.npy')
-Y_train = np.load('/home/inf-54-2020/experimental_cop/scripts/kd_Y_train_size244.npy')
-X_train = np.load('/home/inf-54-2020/experimental_cop/scripts/kd_X_train_size244.npy')
-#X_test = np.load('/home/inf-54-2020/experimental_cop/scripts/X_test_size128_Unet.npy')
-
-cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model.h5"
-from tensorflow import keras
-
-model_segm = keras.models.load_model(cp_save_path)
 
 #model = pickle.load(open(cp_save_path,"rb"))
 
@@ -117,8 +104,14 @@ im_path = "/home/inf-54-2020/experimental_cop/Train_H_Final/Train/"
 path_to_img = '/home/atte/Documents/googletest.jpeg'
 save_path = "/home/inf-54-2020/experimental_cop/"
 #img = cv2.imread(im_path + '20x_1_H_Final_1.jpg')
-img = cv2.imread(save_path + 'YZ004_NR_G2_#15_hCOL1A1_10x__1_H_Final.jpg')
+#img = cv2.imread(save_path + 'YZ004_NR_G2_#15_hCOL1A1_10x__1_H_Final.jpg')
+
+#If tif:
+img = Image.open('/home/inf-54-2020/experimental_cop/Hu_D_10_min_10X.tif')
 #img = cv2.imread(save_path + 'test2.png')
+test_img_norm = np.expand_dims(normalize(np.array(img), axis=1),2)
+test_img_norm=test_img_norm[:,:,0][:,:,None]
+test_img_input=np.expand_dims(test_img_norm, 0)
 
 #print(type(img))
 img = np.asarray(img)
@@ -170,28 +163,34 @@ for i in Y_points:
         splitted_images.append(split) #now you have created a mask for the patch
 segm_patches = []
 i = 0
+from skimage.filters import threshold_otsu
+
 for patch in splitted_images:
     #print(patch.shape)
+    segm = (model_segm.predict(patch)[0,:,:,0] > 0.5).astype(np.uint8)
+    #print(segm)
+    #segm_ready = segm.astype(np.uint8)
     segm = model_segm.predict(patch)
-    #print(segm.shape)
+    #th = threshold_otsu(segm)
+    #segm_ready = (segm > th).astype(np.uint8)
     #segm=np.asarray(segm)
     #print(segm.shape)
     im = np.squeeze(segm)  #need to get rid of the channel dim, otherwise PIL gives an error
     
     #segm = np.expand_dims(segm,0)
     im = (im * 255).astype(np.uint8)
-    segm = (segm * 255).astype(np.uint8)
+    segm_ready = (segm * 255).astype(np.uint8)
 
     #print(segm)
     im = Image.fromarray(im)
     
     #im = im.convert("L")
-    im.save(save_path + str(i) + 'patch_20x_1_remade.png')
+    #im.save(save_path + str(i) + 'patch_20x_1_remade.png')
     i += 1
     #print(type(segm))
-    segm_patches.append(segm)
+    segm_patches.append(segm_ready)
 
-print(segm_patches)
+#print(segm_patches)
 #rebuild phase
 import numpy as np
 final_image = np.zeros_like(img)
@@ -206,18 +205,19 @@ n=1
 #final_image = np.squeeze(final_image)  #need to get rid of the channel dim, otherwise PIL gives an error
 #print(final_image)
 #final_image = np.array(final_image)
-final_image = np.expand_dims(final_image,0)
+print(final_image.shape)
+#final_image = np.expand_dims(final_image,0)
 
 #segm=np.asarray(segm)
 #im = np.squeeze(segm)  #need to get rid of the channel dim, otherwise PIL gives an error
-im = Image.fromarray((final_image * 255).astype(np.uint8))
-#im = Image.fromarray(final_image)
+#im = Image.fromarray((final_image * 255).astype(np.uint8))
+im = Image.fromarray(final_image)
 
 #scipy.misc.imsave(save_path + '20x_1_remade.png', final_image)
 
 #im = im.convert("L")
 #imsave(save_path + '20xremade.tif', final_image)
-final_image.save(save_path + '20x_1_remade.png')
+im.save(save_path + 'Hu_D_10min_10x.png')
 
 print('Done!')
 #try out by adding normalization too!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
