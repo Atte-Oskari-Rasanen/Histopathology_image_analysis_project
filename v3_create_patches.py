@@ -18,7 +18,10 @@ def gen_patches(path, file, new_path):
     
     img = cv2.imread(path + file)
     print(img)
-    patches_img = patchify(img, (244,244,3), step=244)
+    try:
+        patches_img = patchify(img, (244,244,3), step=244)
+    except ValueError:
+        pass
     print(patches_img.shape)
     #print(patches_img.shape)
     for i in range(patches_img.shape[0]): #go through the height
@@ -42,8 +45,8 @@ def gen_patches(path, file, new_path):
 #path_list = ["/home/inf-54-2020/experimental_cop/H_final/Images/", "/home/inf-54-2020/experimental_cop/H_final/Masks/",
 #              "/home/inf-54-2020/experimental_cop/Val_H_Final/Images/"]
 
-#path = "/home/inf-54-2020/experimental_cop/H_final/Images/"
-path = '/home/inf-54-2020/experimental_cop/Val_H_Final/Images/'
+path = "/home/inf-54-2020/experimental_cop/H_Train_Final/Aug_Img/"
+#path = '/home/inf-54-2020/experimental_cop/Val_H_Final/Images/'
 #for p in path_list: #iterate over the paths in the path list
     #print(p)
 #for f in os.listdir(path):  #iterate over files in the path at hand
