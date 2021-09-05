@@ -29,12 +29,12 @@ from tifffile import imsave
 import ntpath
 
 
-IMG_WIDTH = 224
-IMG_HEIGHT = 224
+IMG_WIDTH = 512
+IMG_HEIGHT = 512
 IMG_CHANNELS = 3
 
-TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/"
-M_TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Mask/"
+TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Full_Aug_Img/"
+M_TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Full_Aug_Mask/"
 
 #`TRAIN_IMG_DIR = '/home/atte/kansio/img/'
 #M_TRAIN_IMG_DIR ='/home/atte/kansio/img_mask/'
@@ -46,11 +46,7 @@ KAGGLE_DIR = "/home/inf-54-2020/experimental_cop/kaggle_data/"
 
 train_ids = next(os.walk(KAGGLE_DIR))[1] #returns all sub dirs found within this dir 
 m_train_ids = next(os.walk(KAGGLE_DIR))[1] #returns all sub dirs found within this dir 
-X_train=[]
-Y_train=[]
 
-global X_train
-global Y_train
 
 cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/New_model_bs128.h5"
 model_segm = keras.models.load_model(cp_save_path)
@@ -58,12 +54,14 @@ model_segm = keras.models.load_model(cp_save_path)
 im_path = "/home/inf-54-2020/experimental_cop/Train_H_Final/Train/"
 
 TRAIN_PATH = '/home/inf-54-2020/experimental_cop/kaggle_data/'
-
+X_train = []
+Y_train = []
 
 for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
     path = TRAIN_PATH + id_
     img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
     img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+    #print(img.shape)
     X_train.append(img)  #Fill empty X_train with values from img
     mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
     for mask_file in next(os.walk(path + '/masks/'))[2]:
@@ -89,46 +87,102 @@ def start_points(size, split_size, overlap=0):
     return points
 
 n = 0
-
+Y_testing = np.array(Y_train)
+print(Y_testing.shape)
 def patches(filedir,XY_list):
     for imagefile in os.listdir(filedir):  #to go through files in the specific directory
         #print(os.listdir(directory))
         imagepath=filedir + imagefile
-    
-        #print(imagename)
-        #get the threshold
-        img = Image.open(imagepath) 
-        #print(imagefile)
-        img = np.asarray(img)
-        print(img.shape)
-        try:
-            img_h, img_w, _ = img.shape
-        except ValueError:
-            pass
-        global img_w, img_h #to avoid UnboundLocalError at X_points
-        #img = np.resize(img, (500,500))
-        split_width = 244
-        split_height = 244
-    
-        X_points = start_points(img_w, split_width, 0.1)
-        Y_points = start_points(img_h, split_height, 0.1)
-        #print(Y_points.shape)
+        if imagefile.endswith('.png'):
+            img = Image.open(imagepath)
+            #print(imagefile)
+            img = np.asarray(img)
+            #print(img.shape)
+            try:
+                img_h, img_w, _ = img.shape
+            except ValueError:
+                pass
+            global img_w, img_h #to avoid UnboundLocalError at X_points
+            #img = np.resize(img, (500,500))
+            split_width = 512 #244
+            split_height = 512 #244
         
-        #Split the image
-        for i in Y_points:
-            for j in X_points:
-                split = img[i:i+split_height, j:j+split_width]
-                split = np.expand_dims(split, 0)
-                XY_list.append(split) #now you have created a mask for the patch
-        return XY_list
+            X_points = start_points(img_w, split_width, 0.1)
+            Y_points = start_points(img_h, split_height, 0.1)
+            #print(Y_points.shape)
+            
+            
+            #Split the image
+            for i in Y_points:
+                for j in X_points:
+                    #sometimes some images may be corrupted and thus their array size and shape is 0,
+                    #in these scenarios an error occurs. This images may be skipped via try except
+                    try:
+                        split = img[i:i+split_height, j:j+split_width]
+                        #split = np.expand_dims(split, 0)
+                    except IndexError:
+                        pass
+                    print(split.shape)
+                    #print('==================')
+                    XY_list.append(split)
+                
+    XY_list = np.asarray(XY_list)
+    return XY_list
 
+
+def patches_mask(filedir,XY_list):
+    for imagefile in os.listdir(filedir):  #to go through files in the specific directory
+        #print(os.listdir(directory))
+        imagepath=filedir + imagefile
+        if imagefile.endswith('.png'):
+            img = Image.open(imagepath)
+            #print(imagefile)
+            img = np.asarray(img)
+            #print(img.shape)
+            try:
+                img_h, img_w, _ = img.shape
+            except ValueError:
+                pass
+            global img_w, img_h #to avoid UnboundLocalError at X_points
+            #img = np.resize(img, (500,500))
+            split_width = 512 #244
+            split_height = 512 #244
+        
+            X_points = start_points(img_w, split_width, 0.1)
+            Y_points = start_points(img_h, split_height, 0.1)
+            #print(Y_points.shape)
+            
+            
+            #Split the image
+            for i in Y_points:
+                for j in X_points:
+                    #sometimes some images may be corrupted and thus their array size and shape is 0,
+                    #in these scenarios an error occurs. This images may be skipped via try except
+                    try:
+                        split = img[i:i+split_height, j:j+split_width]
+                        split = np.expand_dims(split, 1)
+                        #this may need to be done as well so that you get the channel dim and hte im number dim:
+                        #split = np.expand_dims(split, 0)
+
+                    except IndexError:
+                        pass
+                    #print(split.shape)
+                    #print('==================')
+                    XY_list.append(split)
+                
+    XY_list = np.asarray(XY_list)
+    return XY_list
 X_train = patches(TRAIN_IMG_DIR, X_train)
-Y_train = patches(M_TRAIN_IMG_DIR, Y_train)
-X_train = np.asarray(X_train)
-Y_train = np.asarray(Y_train)
+Y_train = patches_mask(M_TRAIN_IMG_DIR, Y_train)
 
-np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size244.npy', X_train)
-np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size244.npy', Y_train)
+print(len(X_train))
+print(len(Y_train))
+
+print(X_train.shape)
+print(Y_train.shape)
+#save as pcis - patches created in script
+np.save('/home/inf-54-2020/experimental_cop/scripts/kagl_own_X_train_size512_pcis.npy', X_train)
+np.save('/home/inf-54-2020/experimental_cop/scripts/kagl_own_Y_train_size512_pcis.npy', Y_train)
 
 #print(X_train.shape)
 
@@ -195,7 +249,7 @@ model.summary()
 
 ################################
 #Modelcheckpoint
-cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/Model_244.h5"
+cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/Model_512_pcis.h5"
 
 checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
 
@@ -208,5 +262,5 @@ model.save(cp_save_path)
 checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
 #model.save_weights(cp_save_path)
 print('Model built and saved, now fitting it...')
-results = model.fit(X_train, Y_train, validation_split=0.1, batch_size=16, epochs=200, callbacks=callbacks)
+#results = model.fit(X_train, Y_train, validation_split=0.1, batch_size=16, epochs=200, callbacks=callbacks)
 

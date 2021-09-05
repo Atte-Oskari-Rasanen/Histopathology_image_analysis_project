@@ -30,8 +30,8 @@ from keras.layers import Conv2D
 import os
 from keras.applications.vgg16 import VGG16
 
-IMG_HEIGHT = 244 #Resize images (height  = X, width = Y)
-IMG_WIDTH = 244
+IMG_HEIGHT = 128 #Resize images (height  = X, width = Y)
+IMG_WIDTH = 128
 IMG_CHANNELS = 3
 cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model.h5"
 

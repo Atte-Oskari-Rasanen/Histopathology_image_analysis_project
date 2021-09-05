@@ -97,6 +97,8 @@ import cv2
 import scipy.misc
 
 cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/New_model_bs128.h5"
+cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model.h5"
+
 model_segm = keras.models.load_model(cp_save_path)
 
 im_path = "/home/inf-54-2020/experimental_cop/Train_H_Final/Train/"
@@ -217,7 +219,7 @@ im = Image.fromarray(final_image)
 
 #im = im.convert("L")
 #imsave(save_path + '20xremade.tif', final_image)
-im.save(save_path + 'Hu_D_10min_10x.png')
+im.save(save_path + 'SEGM_Hu_D_10min_10x.png')
 
 print('Done!')
 #try out by adding normalization too!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

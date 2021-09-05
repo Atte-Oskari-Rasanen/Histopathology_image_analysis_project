@@ -1,0 +1,21 @@
+Bootstrap: docker
+
+From: continuumio/miniconda3
+
+%files
+    environment.yml
+    Train_H_Final/* /
+    scripts/* /
+    HPC_Outputs/
+%post
+    /opt/conda/bin/conda env create -f environment.yml
+
+%runscript
+    exec /opt/conda/envs/$(head -n 1 environment.yml | cut -f 2 -d ' ')/bin/"$@"
+    echo "conda env created!"
+    python3 -u
+    exec /scripts/v3_VGG16.py
+    kaggle_/scripts/unet.py
+
+To run the process from the terminal:
+singularity exec script python v3_VGG16.py

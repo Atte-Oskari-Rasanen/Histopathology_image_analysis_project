@@ -8,126 +8,107 @@ Created on Mon Aug  9 16:56:35 2021
 
 import tensorflow as tf
 import os
+import random
 import numpy as np
-from tqdm import tqdm 
+ 
+from tqdm import tqdm  
 from keras.utils import normalize
 from skimage.io import imread, imshow
 from skimage.transform import resize
-seed = 42
-np.random.seed = seed
-
-IMG_WIDTH = 512
-IMG_HEIGHT = 512
-IMG_CHANNELS = 3
-
-TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/"
-M_TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Mask/"
-
-#TRAIN_IMG_DIR = '/home/atte/kansio/img/'
-#M_TRAIN_IMG_DIR ='/home/atte/kansio/img_mask/'
-
-VAL_IMG_DIR = "/home/inf-54-2020/experimental_cop/Val_H_Final/Images/"
-M_VAL_IMG_DIR = "/home/inf-54-2020/experimental_cop/Val_H_Final/Masks/"
-TRAIN_PATH = '/cephyr/NOBACKUP/groups/snic2021-23-496/kaggle_data/'
-
-
-X_train=[]
-Y_train=[]
+import matplotlib.pyplot as plt
+import re
 
 #use train_ids for the loops which take in the kaggle data. The formatting differs from 
 #our own augmented, sliced, data files
 
-#def import_kaggle_data(TRAIN_PATH):
-train_ids = next(os.walk(TRAIN_PATH))[1] #returns all sub dirs found within this dir 
-m_train_ids = next(os.walk(TRAIN_PATH))[1] #returns all sub dirs found within this dir 
-
-#test_ids = next(os.walk(VAL_IMG_DIR))[1]
-no_of_files = len(train_ids)
-no_of_masks = len(m_train_ids)
-for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
-    path = TRAIN_PATH + id_
-    img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
-    img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-    X_train.append(img)  #Fill empty X_train with values from img
-    mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-    for mask_file in next(os.walk(path + '/masks/'))[2]:
-        mask_ = imread(path + '/masks/' + mask_file)
-        mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant',  
-                                      preserve_range=True), axis=-1)
-        mask = np.maximum(mask, mask_)  
-            
-    Y_train.append(mask)   
-    #return X_train, Y_train
-
-
-n1 = 0
-n2 = 0
-print('starting the loops...')
-
-img_dir_id = [] #list of dir ids containing patches of the certain image
-ind_im_ids = [] #create an empty list for the ids of the individual images found in the subdir
-n1 = 0
-for root, subdirectories, files in sorted(os.walk(TRAIN_IMG_DIR)):
-    #print(root)
-    for subdirectory in subdirectories:
-        file_path = os.path.join(root, subdirectory)
-        #print(subdirectory)
-        for f in os.listdir(file_path):
-            if f.endswith('.png'):
-                #print(f)
-                img_path=file_path + '/' + f   #create first of dic values, i.e the path
-                #print(img_path)
-                #print(img_path)
-                #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
-                img = imread(img_path)[:,:,:IMG_CHANNELS]
-                img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-                #X_train[n1] = img  #Fill empty X_train with values from img
-                X_train.append(img)
-                #print(str(n1) + ' one loop of X_train done!')
-                n1 += 1
-   
-X_train=np.array(X_train)
-np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size512.npy', X_train)
-
-print('Images saved into array!')
-n2 = 0
-for root, subdirectories, files in sorted(os.walk(M_TRAIN_IMG_DIR)):
-    #print(root)
-    for subdirectory in subdirectories:
-        file_path = os.path.join(root, subdirectory)
-        #print(subdirectory)
-        for m in os.listdir(file_path):
-            if m.endswith('.png'):
-                #print(f)
-                img_path=file_path + '/' + m   #create first of dic values, i.e the path
-                #print(img_path)
-                #print(img_path)
-                #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
-                img = imread(img_path)[:,:,:1]
-                img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-                #X_train[n1] = img  #Fill empty X_train with values from img
-                Y_train.append(img)
-                #print(str(n1) + ' one loop of Y_train done!')
-                n1 += 1
-
-            else:
-                continue
-Y_train=np.array(Y_train)
-
-np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size512.npy', Y_train)
-
-print('masks saved into array!')
+def import_kaggle_data(TRAIN_PATH):
+    train_ids = next(os.walk(TRAIN_PATH))[1] #returns all sub dirs found within this dir 
+    m_train_ids = next(os.walk(TRAIN_PATH))[1] #returns all sub dirs found within this dir 
     
-#convert X and Y train into numpy arrays
-X_train=np.array(X_train)
-print('X_train:')
-print(X_train.shape)
-print(X_train.size)
-Y_train=np.array(Y_train)
-print('Y_train:')
-print(X_train.shape)
-print(X_train.size)
+    #test_ids = next(os.walk(VAL_IMG_DIR))[1]
+    no_of_files = len(train_ids)
+    no_of_masks = len(m_train_ids)
+    for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
+        path = TRAIN_PATH + id_
+        img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
+        img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+        X_train.append(img)  #Fill empty X_train with values from img
+        mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+        for mask_file in next(os.walk(path + '/masks/'))[2]:
+            mask_ = imread(path + '/masks/' + mask_file)
+            mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant',  
+                                          preserve_range=True), axis=-1)
+            mask = np.maximum(mask, mask_)  
+                
+        Y_train.append(mask)   
+        return X_train, Y_train
 
+
+def import_own_data(TRAIN_IMG_DIR, M_TRAIN_IMG_DIR, X_train, Y_train):
+    print('starting the loops...')
+    
+    img_dir_id = [] #list of dir ids containing patches of the certain image
+    ind_im_ids = [] #create an empty list for the ids of the individual images found in the subdir
+    n1 = 0
+    for root, subdirectories, files in sorted(os.walk(TRAIN_IMG_DIR)):
+        #print(root)
+        for subdirectory in subdirectories:
+            file_path = os.path.join(root, subdirectory)
+            #print(subdirectory)
+            for f in os.listdir(file_path):
+                if f.endswith('.png'):
+                    #print(f)
+                    img_path=file_path + '/' + f   #create first of dic values, i.e the path
+                    #print(img_path)
+                    #print(img_path)
+                    #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+                    img = imread(img_path)[:,:,:IMG_CHANNELS]
+                    img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+                    #X_train[n1] = img  #Fill empty X_train with values from img
+                    X_train.append(img)
+                    #print(str(n1) + ' one loop of X_train done!')
+                    n1 += 1
+       
+    X_train=np.array(X_train)
+    np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size512.npy', X_train)
+    
+    print('Images saved into array!')
+    
+    
+    #fill the arrays with kaggle data (different function used for it due to different directory structure)
+    X_train, Y_train = import_kaggle_data(TRAIN_PATH)
+    
+    n2 = 0
+    for root, subdirectories, files in sorted(os.walk(M_TRAIN_IMG_DIR)):
+        #print(root)
+        for subdirectory in subdirectories:
+            file_path = os.path.join(root, subdirectory)
+            #print(subdirectory)
+            for m in os.listdir(file_path):
+                if m.endswith('.png'):
+                    #print(f)
+                    img_path=file_path + '/' + m   #create first of dic values, i.e the path
+                    #print(img_path)
+                    #print(img_path)
+                    #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+                    img = imread(img_path)[:,:,:1]
+                    img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+                    #X_train[n1] = img  #Fill empty X_train with values from img
+                    Y_train.append(img)
+                    #print(str(n1) + ' one loop of Y_train done!')
+                    n1 += 1
+    
+                else:
+                    continue
+    Y_train=np.array(Y_train)
+    
+    np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size512.npy', Y_train)
+    print('masks saved into array!')
+
+    #convert X and Y train into numpy arrays
+
+    return X_train, Y_train
+    
 
 # test images
 #X_test = np.zeros((len(test_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
@@ -182,11 +163,6 @@ print('Test files saved into array!')
 #     X_test[n] = img
 # =============================================================================
 
-print('Done!')
-
-print('lengths of X_ train and Y_Train: ')
-print(len(X_train))
-print(len(Y_train))
 def unet(X_train, Y_train, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS):
     print('Building the model...')
     X_train = np.expand_dims(normalize(np.array(X_train), axis=1),3)
@@ -269,7 +245,62 @@ def unet(X_train, Y_train, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS):
     return results
 
 ####################################
+import multiprocessing as mp
 
+if __name__ == "__main__":
+    size = 10000000   # Number of random numbers to add
+    procs = 6   # Number of processes to create
+    seed = 42
+    np.random.seed = seed
+    print("Number of cpu : ", mp.cpu_count())
+
+    IMG_WIDTH = 512
+    IMG_HEIGHT = 512
+    IMG_CHANNELS = 3
+    
+    TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/"
+    M_TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Mask/"
+    
+    #TRAIN_IMG_DIR = '/home/atte/kansio/img/'
+    #M_TRAIN_IMG_DIR ='/home/atte/kansio/img_mask/'
+    
+    VAL_IMG_DIR = "/home/inf-54-2020/experimental_cop/Val_H_Final/Images/"
+    M_VAL_IMG_DIR = "/home/inf-54-2020/experimental_cop/Val_H_Final/Masks/"
+    TRAIN_PATH = '/home/inf-54-2020/experimental_cop/kaggle_data/'
+    
+    
+    X_train=[]
+    Y_train=[]
+
+    p1 = mp.Process(target=import_kaggle_data, (args=TRAIN_PATH))
+    p2 = mp.Process(target=import_own_data, (args = TRAIN_IMG_DIR, M_TRAIN_IMG_DIR, X_train, Y_train))
+    p3 = mp.Process(target=unet(X_train, Y_train, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
+    
+    p1.start()
+    p2.start()
+    p3.start()
+    
+    # Create a list of jobs and then iterate through
+    # the number of processes appending each process to
+    # the job list 
+    jobs = []
+    for i in range(0, procs):
+        X_train, Y_train = import_kaggle_data(TRAIN_PATH)
+        X_train, Y_train = import_own_data(TRAIN_IMG_DIR, M_TRAIN_IMG_DIR, X_train, Y_train)
+        results = unet(X_train, Y_train, IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+        process = multiprocessing.Process(target=list_append, 
+                                          args=(size, i, out_list))
+        jobs.append(process)
+
+    # Start the processes (i.e. calculate the random number lists)      
+    for j in jobs:
+        j.start()
+
+    # Ensure all of the processes have finished
+    for j in jobs:
+        j.join()
+
+    print("List processing complete.")
 
 
 # idx = random.randint(0, len(X_train))
