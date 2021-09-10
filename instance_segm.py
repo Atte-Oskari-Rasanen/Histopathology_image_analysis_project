@@ -14,7 +14,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from skimage import measure, color, io
 import tensorflow as tf
-
+from U_net_model import Unet
 import os
 seed = 42
 np.random.seed = seed
@@ -22,28 +22,24 @@ import numpy as np
 from tensorflow import keras
 from tifffile import imsave
 import ntpath
-IMG_HEIGHT = 128
-IMG_WIDTH  = 128
+IMG_HEIGHT = 512
+IMG_WIDTH  = 512
 IMG_CHANNELS = 1
 
-#First apply the segmentation to patches, reconstruct, then watershed
-def start_points(size, split_size, overlap=0):
-    points = [0]
-    stride = int(split_size * (1-overlap))
-    counter = 1
-    while True:
-        pt = stride * counter
-        if pt + split_size >= size:
-            points.append(size - split_size)
-            break
-        else:
-            points.append(pt)
-        counter += 1
-    return points
 
 
-cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model.h5"
+
+
+cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kaggle_model_size512.h5"
 model = keras.models.load_model(cp_save_path)
+
+def get_model():
+    return Unet(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
+
+#Load the model and corresponding weights
+model = get_model()
+#model.load_weights('mitochondria_50_plus_100_epochs.hdf5') #Trained for 50 epochs and then additional 100
+model.load_weights(cp_save_path) #Trained for 50 epochs
 
 # def get_model():
 #     return simple_unet_model(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
@@ -54,87 +50,37 @@ model = keras.models.load_model(cp_save_path)
 model.load_weights(cp_save_path) 
 save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/"
 
+
 #Load and process the test image - image that needs to be segmented. 
 #test_img = cv2.imread('data/test_images/01-1_256.tif', 0)
-test_img = Image.open('/home/inf-54-2020/experimental_cop/Original_Images/Hu_D_30_min_10X.tif')
-test_img = np.array(test_img)
+test_img = cv2.imread('data/test_images/img8.tif', 0)
+test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
+test_img_norm=test_img_norm[:,:,0][:,:,None]
+test_img_input=np.expand_dims(test_img_norm, 0)
+
+#Predict and threshold for values above 0.5 probability
+segmented = (model.predict(test_img_input)[0,:,:,0] > 0.05).astype(np.uint8)
+
+#Load and process the test image - image that needs to be segmented. 
+#test_img = cv2.imread('data/test_images/01-1_256.tif', 0)
+#test_img = cv2.imread('/cephyr/NOBACKUP/groups/snic2021-23-496/Original_Images/Hu_D_30_min_10X.tif')
+test_img = cv2.imread('/home/inf-54-2020/experimental_cop/Original_Images/Hu_D_30_min_10X.tif')
+
+test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
+test_img_norm=test_img_norm[:,:,0][:,:,None]
+test_img_input=np.expand_dims(test_img_norm, 0)
+
+#Predict and threshold for values above 0.5 probability
+segmented = (model.predict(test_img_input)[0,:,:,0] > 0.05).astype(np.uint8)
+plt.imsave(save_path + 'output_pre_instance.jpg', segmented, cmap='gray')
+
 print(test_img.shape)
-#test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
-#print(test_img_norm.shape)
-try:
-    img_h, img_w, _ = test_img.shape
-#img = np.expand_dims(img, 0)
-except ValueError:
-    pass
 
-#test_img_norm=test_img[:,:,0][:,:,None]
-
-# print(img_w)
-# print(img_h)
-split_width = 128
-split_height = 128
-
-X_points = start_points(img_w, split_width, 0.1)
-Y_points = start_points(img_h, split_height, 0.1)
-#print(Y_points.shape)
-splitted_images = []
-
-for i in Y_points:
-    for j in X_points:
-        split = test_img[i:i+split_height, j:j+split_width]
-        #print(split.shape)
-        #split = split.astype(np.uint8)
-        #segm = model_segm.predict(split)
-        #im = Image.fromarray(segm)
-        split = np.expand_dims(split, 0)
-        #im.save(im_path + str(i) + str(j) +'_10x_1_remade.png')
-        splitted_images.append(split) #now you have created a mask for the patch
-        
-segm_patches = []
-i = 0
-print('segmenting')
-for patch in splitted_images:
-    #print(patch.shape)
-    #Predict and threshold for values above 0.5 probability
-    segmented = (model.predict(patch)[0,:,:,0] > 0.5).astype(np.uint8)
-    #print(segm)
-    #segm_ready = segm.astype(np.uint8)
-    #segm = model_segm.predict(patch)
-    #th = threshold_otsu(segm)
-    #segm_ready = (segm > th).astype(np.uint8)
-    #print(segm.shape)
-    segmented = np.expand_dims(segmented,2)
-    #print(segmented.shape)
-    #im = im.convert("L")
-    #im.save(save_path + str(i) + 'patch_20x_1_remade.png')
-    i += 1
-    #print(type(segm))
-    segm_patches.append(segmented)
-
-#print(segm_patches)
-#rebuild phase
-final_image = np.zeros_like(test_img)
-print('creating the reconstructed, segmented image...')
-index = 0
-for i in Y_points:
-    for j in X_points:
-        final_image[i:i+split_height, j:j+split_width] = segm_patches[index]
-        index += 1
-
-im = Image.fromarray(final_image)
-print(type(im))
-imagename = 'HU_D_10x_30min_IS_WS.png'
-save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/" + imagename
-
-final_image = Image.fromarray(final_image)
-final_image.save(save_path)
-#print(str(n) + "th done!" + str(left) + "left...")
-#plt.imsave(save_path, final_image)
 
 ########################################################
 #####Watershed
 
-img = cv2.imread(save_path)  #Read as color (3 channels)
+img = cv2.imread(save_path +'output_pre_instance.jpg')  #Read as color (3 channels)
 img_grey = img[:,:,0]
 
 ## transform the unet result to binary image
@@ -226,7 +172,7 @@ img2 = color.label2rgb(markers, bg_label=0)
 #Now, time to extract properties of detected cells
 # regionprops function in skimage measure module calculates useful parameters for each object.
 
-imagename = 'Hu_D_10x_1-min_test'
+imagename = 'Hu_D_10x_30-min_test'
 img2 = Image.fromarray((img2 * 255).astype(np.uint8))
 
 img2 = Image.fromarray(img2)
@@ -246,7 +192,8 @@ df = df[df.mean_intensity > 100]  #Remove background or other regions that may b
 print(df.head())
 
 #img = Image.fromarray(img2)
-
+plt.imshow(segmented, cmap='gray')
+plt.savefig('plot2_kaggledata.png')
 
 print('Done!')
 

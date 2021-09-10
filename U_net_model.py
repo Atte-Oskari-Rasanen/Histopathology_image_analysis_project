@@ -5,79 +5,75 @@ Created on Fri Jul 30 13:56:58 2021
 
 @author: atte
 """
-import torch
-import torch.nn as nn
-import torchvision.transforms.functional as TF
+import tensorflow as tf
+from keras.models import Model
+from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, concatenate, Conv2DTranspose, BatchNormalization, Dropout, Lambda
+from keras import Model
+from keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Dropout
+from tensorflow.keras.models import Model, load_model,Sequential
+from tensorflow.keras.layers import Input, Dense
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
+from tensorflow.keras import regularizers
 
-class DoubleConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(DoubleConv, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, 3, 1, 1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-        )
+################################################################
 
-    def forward(self, x):
-        return self.conv(x)
+def Unet(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS):
+    input_layer = tf.keras.layers.Input((IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
+    start_neurons = 16
+    conv1 = tf.keras.layers.Conv2D(start_neurons * 1, (3, 3), activation="relu", padding="same")(input_layer)
+    conv1 = tf.keras.layers.Conv2D(start_neurons * 1, (3, 3), activation="relu", padding="same")(conv1)
+    pool1 = tf.keras.layers.MaxPooling2D((2, 2))(conv1)
+    pool1 = tf.keras.layers.Dropout(0.25)(pool1)
 
-class UNET(nn.Module):
-    def __init__(
-            self, in_channels=3, out_channels=1, features=[64, 128, 256, 512],
-    ):
-        super(UNET, self).__init__()
-        self.ups = nn.ModuleList()
-        self.downs = nn.ModuleList()
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+    conv2 = tf.keras.layers.Conv2D(start_neurons * 2, (3, 3), activation="relu", padding="same")(pool1)
+    conv2 = tf.keras.layers.Conv2D(start_neurons * 2, (3, 3), activation="relu", padding="same")(conv2)
+    pool2 = tf.keras.layers.MaxPooling2D((2, 2))(conv2)
+    pool2 = tf.keras.layers.Dropout(0.5)(pool2)
 
-        # Down part of UNET
-        for feature in features:
-            self.downs.append(DoubleConv(in_channels, feature))
-            in_channels = feature
+    conv3 = tf.keras.layers.Conv2D(start_neurons * 4, (3, 3), activation="relu", padding="same")(pool2)
+    conv3 = tf.keras.layers.Conv2D(start_neurons * 4, (3, 3), activation="relu", padding="same")(conv3)
+    pool3 = tf.keras.layers.MaxPooling2D((2, 2))(conv3)
+    pool3 = tf.keras.layers.Dropout(0.5)(pool3)
 
-        # Up part of UNET
-        for feature in reversed(features):
-            self.ups.append(
-                nn.ConvTranspose2d(
-                    feature*2, feature, kernel_size=2, stride=2,
-                )
-            )
-            self.ups.append(DoubleConv(feature*2, feature))
+    conv4 = tf.keras.layers.Conv2D(start_neurons * 8, (3, 3), activation="relu", padding="same")(pool3)
+    conv4 = tf.keras.layers.Conv2D(start_neurons * 8, (3, 3), activation="relu", padding="same")(conv4)
+    pool4 = tf.keras.layers.MaxPooling2D((2, 2))(conv4)
+    pool4 = tf.keras.layers.Dropout(0.5)(pool4)
 
-        self.bottleneck = DoubleConv(features[-1], features[-1]*2)
-        self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1)
+    # Middle
+    convm = tf.keras.layers.Conv2D(start_neurons * 16, (3, 3), activation="relu", padding="same")(pool4)
+    convm = tf.keras.layers.Conv2D(start_neurons * 16, (3, 3), activation="relu", padding="same")(convm)
+    
+    deconv4 = tf.keras.layers.Conv2DTranspose(start_neurons * 8, (3, 3), strides=(2, 2), padding="same")(convm)
+    uconv4 = tf.keras.layers.concatenate([deconv4, conv4])
+    uconv4 = tf.keras.layers.Dropout(0.5)(uconv4)
+    uconv4 = tf.keras.layers.Conv2D(start_neurons * 8, (3, 3), activation="relu", padding="same")(uconv4)
+    uconv4 = tf.keras.layers.Conv2D(start_neurons * 8, (3, 3), activation="relu", padding="same")(uconv4)
 
-    def forward(self, x):
-        skip_connections = []
+    deconv3 = tf.keras.layers.Conv2DTranspose(start_neurons * 4, (3, 3), strides=(2, 2), padding="same")(uconv4)
+    uconv3 = tf.keras.layers.concatenate([deconv3, conv3])
+    uconv3 = tf.keras.layers.Dropout(0.5)(uconv3)
+    uconv3 = tf.keras.layers.Conv2D(start_neurons * 4, (3, 3), activation="relu", padding="same")(uconv3)
+    uconv3 = tf.keras.layers.Conv2D(start_neurons * 4, (3, 3), activation="relu", padding="same")(uconv3)
 
-        for down in self.downs:
-            x = down(x)
-            skip_connections.append(x)
-            x = self.pool(x)
+    deconv2 = tf.keras.layers.Conv2DTranspose(start_neurons * 2, (3, 3), strides=(2, 2), padding="same")(uconv3)
+    uconv2 = tf.keras.layers.concatenate([deconv2, conv2])
+    uconv2 = tf.keras.layers.Dropout(0.5)(uconv2)
+    uconv2 = tf.keras.layers.Conv2D(start_neurons * 2, (3, 3), activation="relu", padding="same")(uconv2)
+    uconv2 = tf.keras.layers.Conv2D(start_neurons * 2, (3, 3), activation="relu", padding="same")(uconv2)
 
-        x = self.bottleneck(x)
-        skip_connections = skip_connections[::-1]
+    deconv1 = tf.keras.layers.Conv2DTranspose(start_neurons * 1, (3, 3), strides=(2, 2), padding="same")(uconv2)
+    uconv1 = tf.keras.layers.concatenate([deconv1, conv1])
+    uconv1 = tf.keras.layers.Dropout(0.5)(uconv1)
+    uconv1 = tf.keras.layers.Conv2D(start_neurons * 1, (3, 3), activation="relu", padding="same")(uconv1)
+    uconv1 = tf.keras.layers.Conv2D(start_neurons * 1, (3, 3), activation="relu", padding="same")(uconv1)
+    
+    output_layer = tf.keras.layers.Conv2D(1, (1,1), padding="same", activation="sigmoid")(uconv1)
 
-        for idx in range(0, len(self.ups), 2):
-            x = self.ups[idx](x)
-            skip_connection = skip_connections[idx//2]
+    
 
-            if x.shape != skip_connection.shape:
-                x = TF.resize(x, size=skip_connection.shape[2:])
-
-            concat_skip = torch.cat((skip_connection, x), dim=1)
-            x = self.ups[idx+1](concat_skip)
-
-        return self.final_conv(x)
-
-def test():
-    x = torch.randn((3, 1, 161, 161))
-    model = UNET(in_channels=1, out_channels=1)
-    preds = model(x)
-    assert preds.shape == x.shape
-
-if __name__ == "__main__":
-    test()
+    model = tf.keras.Model(inputs=[input_layer], outputs=[output_layer])
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    model.summary()
+    
+    return model

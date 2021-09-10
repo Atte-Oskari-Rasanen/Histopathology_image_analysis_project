@@ -16,8 +16,8 @@ from skimage.transform import resize
 seed = 42
 np.random.seed = seed
 
-IMG_WIDTH = 512
-IMG_HEIGHT = 512
+IMG_WIDTH = 244
+IMG_HEIGHT = 244
 IMG_CHANNELS = 3
 
 TRAIN_IMG_DIR = "/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/"
@@ -87,7 +87,7 @@ for root, subdirectories, files in sorted(os.walk(TRAIN_IMG_DIR)):
                 n1 += 1
    
 X_train=np.array(X_train)
-np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size512.npy', X_train)
+np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size244.npy', X_train)
 
 print('Images saved into array!')
 n2 = 0
@@ -114,7 +114,7 @@ for root, subdirectories, files in sorted(os.walk(M_TRAIN_IMG_DIR)):
                 continue
 Y_train=np.array(Y_train)
 
-np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size512.npy', Y_train)
+np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size244.npy', Y_train)
 
 print('masks saved into array!')
     
@@ -151,7 +151,7 @@ for root, subdirectories, files in tqdm(os.walk(VAL_IMG_DIR)): #tqdm shows the p
             X_test.append(img)
             #print(' loop of X_test done!')
 X_test = np.array(X_test)
-np.save('/home/inf-54-2020/experimental_cop/scripts/X_test_size512.npy', X_test)
+np.save('/home/inf-54-2020/experimental_cop/scripts/X_test_size244.npy', X_test)
 
 print('Test files saved into array!')
 # X_mask = []
