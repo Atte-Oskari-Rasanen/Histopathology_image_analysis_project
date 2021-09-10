@@ -22,6 +22,7 @@ import numpy as np
 from tensorflow import keras
 from tifffile import imsave
 import ntpath
+from Predict_indiv_img import Segment_img
 IMG_HEIGHT = 512
 IMG_WIDTH  = 512
 IMG_CHANNELS = 1
@@ -30,7 +31,7 @@ IMG_CHANNELS = 1
 
 
 
-cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kaggle_model_size512.h5"
+cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model_size512.h5"
 model = keras.models.load_model(cp_save_path)
 
 def get_model():
@@ -41,19 +42,14 @@ model = get_model()
 #model.load_weights('mitochondria_50_plus_100_epochs.hdf5') #Trained for 50 epochs and then additional 100
 model.load_weights(cp_save_path) #Trained for 50 epochs
 
-# def get_model():
-#     return simple_unet_model(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
 
-#Load the model and corresponding weights
-#model = get_model()
-#model.load_weights('mitochondria_50_plus_100_epochs.hdf5') #Trained for 50 epochs and then additional 100
 model.load_weights(cp_save_path) 
 save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/"
 
 
 #Load and process the test image - image that needs to be segmented. 
-#test_img = cv2.imread('data/test_images/01-1_256.tif', 0)
-test_img = cv2.imread('data/test_images/img8.tif', 0)
+input_path = '/home/inf-54-2020/experimental_cop/Original_Images/Hu_D_30_min_10X.tif'
+test_img = Segment_img(input_path)
 test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
 test_img_norm=test_img_norm[:,:,0][:,:,None]
 test_img_input=np.expand_dims(test_img_norm, 0)
@@ -65,6 +61,7 @@ segmented = (model.predict(test_img_input)[0,:,:,0] > 0.05).astype(np.uint8)
 #test_img = cv2.imread('data/test_images/01-1_256.tif', 0)
 #test_img = cv2.imread('/cephyr/NOBACKUP/groups/snic2021-23-496/Original_Images/Hu_D_30_min_10X.tif')
 test_img = cv2.imread('/home/inf-54-2020/experimental_cop/Original_Images/Hu_D_30_min_10X.tif')
+
 
 test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
 test_img_norm=test_img_norm[:,:,0][:,:,None]

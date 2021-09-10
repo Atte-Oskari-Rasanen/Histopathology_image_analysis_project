@@ -71,7 +71,6 @@ def Unet(IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS):
     output_layer = tf.keras.layers.Conv2D(1, (1,1), padding="same", activation="sigmoid")(uconv1)
 
     
-
     model = tf.keras.Model(inputs=[input_layer], outputs=[output_layer])
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     model.summary()

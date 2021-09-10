@@ -42,19 +42,6 @@ im_path = '/cephyr/NOBACKUP/groups/snic2021-23-496/batch3/'
 path_to_img = '/home/atte/Documents/googletest.jpeg'
 save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/"
 save_path = '/cephyr/NOBACKUP/groups/snic2021-23-496/All_imgs_segm/'
-#img = cv2.imread(im_path + '20x_1_H_Final_1.jpg')
-#img = cv2.imread(save_path + 'YZ004_NR_G2_#15_hCOL1A1_10x__1_H_Final.jpg')
-
-#If tif:
-#img = Image.open('/home/inf-54-2020/experimental_cop/Hu_D_45_min_10X.tif')
-#img = cv2.imread(save_path + 'test2.png')
-
-
-#t = cv2.imread('/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/augmented_image_14/augmented_image_14_184.png')
-#t = np.resize(t,(128,128,3))
-#t = np.expand_dims(t,0)
-# r = model_segm(t)
-# r.save(save_path + 'r.png')
 
 def Segment_img(img_path):
     def start_points(size, split_size, overlap=0):
@@ -142,7 +129,8 @@ def Segment_img(img_path):
     #im = Image.fromarray((final_image * 255).astype(np.uint8))
     im = Image.fromarray(final_image)
     print(type(im))
-    im.save(save_path + imagename + '_512S.png')
+    return(im)
+#    im.save(save_path + imagename + '_512S.png')
 
 #im = im.convert("L")
 #imsave(save_path + '20xremade.tif', final_image)

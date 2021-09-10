@@ -128,8 +128,8 @@ TRAIN_PATH = '/home/inf-54-2020/experimental_cop/kaggle_data/'
 # np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_kagl_own_s512.npy', X_train)
 # np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_kagl_own_s512.npy', Y_train)
 
-X_train = np.load('/home/inf-54-2020/experimental_cop/scripts/X_train_size512.npy')
-Y_train = np.load('/home/inf-54-2020/experimental_cop/scripts/Y_train_size512.npy')
+X_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/X_train_size512.npy')
+Y_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/Y_train_size512.npy')
 
 
 def build_model(input_layer, start_neurons):
@@ -209,7 +209,7 @@ model.summary()
 #                     batch_size=batch_size,
 #                     callbacks=[early_stopping, model_checkpoint, reduce_lr])
 
-cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model_size512.h5"
+cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kaggle_model_size512.h5"
 
 checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
 
@@ -222,7 +222,7 @@ model.save(cp_save_path)
 checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
 #model.save_weights(cp_save_path)
 print('Model built and saved, now fitting it...')
-history = model.fit(X_train, Y_train, validation_split=0.1, batch_size=16, epochs=200, callbacks=callbacks)
+history = model.fit(X_train, Y_train, validation_split=0.1, batch_size=128, epochs=200, callbacks=callbacks)
 
 plt.plot(history.history['accuracy'])
 plt.plot(history.history['val_accuracy'])
