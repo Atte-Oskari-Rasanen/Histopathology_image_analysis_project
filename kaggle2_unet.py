@@ -17,9 +17,9 @@ import matplotlib.pyplot as plt
 # sns.set_style("white")
 
 from sklearn.model_selection import train_test_split
-
 from skimage.transform import resize
 import tensorflow as tf
+
 from keras import Model
 from keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Dropout
 from tensorflow.keras.models import Model, load_model,Sequential
@@ -27,6 +27,10 @@ from tensorflow.keras.layers import Input, Dense
 from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
 from tensorflow.keras import regularizers
 
+from tensorflow import keras
+from tensorflow.keras import optimizers
+from tensorflow.keras.optimizers import schedules
+from keras import Model
 
 from tqdm import tqdm
 import os
@@ -44,11 +48,11 @@ IMG_HEIGHT = 512
 IMG_CHANNELS = 3
 
 TRAIN_PATH = '/cephyr/NOBACKUP/groups/snic2021-23-496/kaggle_data/'
-TRAIN_PATH = '/home/inf-54-2020/experimental_cop/kaggle_data/'
+#TRAIN_PATH = '/home/inf-54-2020/experimental_cop/kaggle_data/'
 # TRAIN_PATH = sys.argv[1]
 
 # TEST_PATH = 'stage1_test/'
-# train_ids = next(os.walk(TRAIN_PATH))[1]
+#train_ids = next(os.walk(TRAIN_PATH))[1]
 # #test_ids = next(os.walk(TEST_PATH))[1]
 
 # # X_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
@@ -192,6 +196,9 @@ output_layer = build_model(input_layer, 16)
 
 model = tf.keras.Model(inputs=[input_layer], outputs=[output_layer])
 
+# opt = SGD(lr=0.01, momentum=0.9, clipnorm=1.0)
+# opt = keras.optimizers.Adam(learning_rate=0.01)
+
 #model = Model(input_layer, output_layer)
 model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"])
 model.summary()
@@ -209,13 +216,32 @@ model.summary()
 #                     batch_size=batch_size,
 #                     callbacks=[early_stopping, model_checkpoint, reduce_lr])
 
+
 cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kaggle_model_size512.h5"
 
 checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
+# def scheduler(epoch, lr): #keeps the initial learning rate (e.g. 0.01) for the first 5 epocsh and
+#                             #then decreases it significantly
+#    if epoch < 5:
+#     return lr
+#    else:
+#      return lr * tf.math.exp(-0.1)
 
 callbacks = [
         tf.keras.callbacks.EarlyStopping(patience=10, monitor='val_loss'),
-        tf.keras.callbacks.TensorBoard(log_dir='logs')]
+        tf.keras.callbacks.TensorBoard(log_dir='logs'),
+        #tf.keras.callbacks.LearningRateScheduler(scheduler)
+]
+lr_schedule = keras.optimizers.schedules.ExponentialDecay(
+    initial_learning_rate=1e-2,
+    decay_steps=10000,
+    decay_rate=0.9)
+
+#gradient norm scaling
+optimizer = keras.optimizers.Adam(learning_rate=lr_schedule, clipnorm=1.0)
+#gradient norm clipping
+#optimizer = keras.optimizers.Adam(learning_rate=lr_schedule, clipvalue=0.5)
+#optimizer = keras.optimizers.Adam(learning_rate=lr_schedule)
 
 
 model.save(cp_save_path)

@@ -25,7 +25,7 @@ import ntpath
 from Predict_indiv_img import Segment_img
 IMG_HEIGHT = 512
 IMG_WIDTH  = 512
-IMG_CHANNELS = 1
+IMG_CHANNELS = 3
 
 
 
@@ -40,38 +40,38 @@ def get_model():
 #Load the model and corresponding weights
 model = get_model()
 #model.load_weights('mitochondria_50_plus_100_epochs.hdf5') #Trained for 50 epochs and then additional 100
-model.load_weights(cp_save_path) #Trained for 50 epochs
+#model.load_weights(cp_save_path) #Trained for 50 epochs
 
 
-model.load_weights(cp_save_path) 
 save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/"
 
 
 #Load and process the test image - image that needs to be segmented. 
 input_path = '/home/inf-54-2020/experimental_cop/Original_Images/Hu_D_30_min_10X.tif'
-test_img = Segment_img(input_path)
-test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
-test_img_norm=test_img_norm[:,:,0][:,:,None]
-test_img_input=np.expand_dims(test_img_norm, 0)
+# test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
+# test_img_norm=test_img_norm[:,:,0][:,:,None]
+# test_img_input=np.expand_dims(test_img_norm, 0)
 
 #Predict and threshold for values above 0.5 probability
-segmented = (model.predict(test_img_input)[0,:,:,0] > 0.05).astype(np.uint8)
+segmented = Segment_img(input_path,model)
+segmented = np.array(segmented)
 
 #Load and process the test image - image that needs to be segmented. 
 #test_img = cv2.imread('data/test_images/01-1_256.tif', 0)
 #test_img = cv2.imread('/cephyr/NOBACKUP/groups/snic2021-23-496/Original_Images/Hu_D_30_min_10X.tif')
-test_img = cv2.imread('/home/inf-54-2020/experimental_cop/Original_Images/Hu_D_30_min_10X.tif')
+# test_img = cv2.imread('/home/inf-54-2020/experimental_cop/Original_Images/Hu_D_30_min_10X.tif')
 
 
-test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
-test_img_norm=test_img_norm[:,:,0][:,:,None]
-test_img_input=np.expand_dims(test_img_norm, 0)
+# test_img_norm = np.expand_dims(normalize(np.array(test_img), axis=1),2)
+# test_img_norm=test_img_norm[:,:,0][:,:,None]
+# test_img_input=np.expand_dims(test_img_norm, 0)
 
-#Predict and threshold for values above 0.5 probability
-segmented = (model.predict(test_img_input)[0,:,:,0] > 0.05).astype(np.uint8)
+# #Predict and threshold for values above 0.5 probability
+# segmented = (model.predict(test_img_input)[0,:,:,0] > 0.05).astype(np.uint8)
+
 plt.imsave(save_path + 'output_pre_instance.jpg', segmented, cmap='gray')
 
-print(test_img.shape)
+#print(test_img.shape)
 
 
 ########################################################
@@ -172,7 +172,7 @@ img2 = color.label2rgb(markers, bg_label=0)
 imagename = 'Hu_D_10x_30-min_test'
 img2 = Image.fromarray((img2 * 255).astype(np.uint8))
 
-img2 = Image.fromarray(img2)
+#img2 = Image.fromarray(img2)
 #print(type(img2))
 img2.save(save_path + imagename + '_IS_WS.png')
 
@@ -182,6 +182,7 @@ props = measure.regionprops_table(markers, intensity_image=img_grey,
                                           'area', 'equivalent_diameter',
                                           'mean_intensity', 'solidity'])
     
+
 import pandas as pd
 df = pd.DataFrame(props)
 df = df[df.mean_intensity > 100]  #Remove background or other regions that may be counted as objects

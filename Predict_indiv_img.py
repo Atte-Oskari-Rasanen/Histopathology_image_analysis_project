@@ -34,16 +34,16 @@ import ntpath
 #then apply the processes like model.predict on these arrays, append into segm_images
 #and then save as a whole slide image
 
-cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model.h5"
-model_segm = keras.models.load_model(cp_save_path)
+# cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model.h5"
+# model_segm = keras.models.load_model(cp_save_path)
 
-im_path = "/home/inf-54-2020/experimental_cop/batch3/"
-im_path = '/cephyr/NOBACKUP/groups/snic2021-23-496/batch3/'
-path_to_img = '/home/atte/Documents/googletest.jpeg'
-save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/"
-save_path = '/cephyr/NOBACKUP/groups/snic2021-23-496/All_imgs_segm/'
+# im_path = "/home/inf-54-2020/experimental_cop/batch3/"
+# im_path = '/cephyr/NOBACKUP/groups/snic2021-23-496/batch3/'
+# path_to_img = '/home/atte/Documents/googletest.jpeg'
+# save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/"
+# save_path = '/cephyr/NOBACKUP/groups/snic2021-23-496/All_imgs_segm/'
 
-def Segment_img(img_path):
+def Segment_img(img_path,model_segm):
     def start_points(size, split_size, overlap=0):
         points = [0]
         stride = int(split_size * (1-overlap))
