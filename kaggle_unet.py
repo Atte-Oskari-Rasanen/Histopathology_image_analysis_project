@@ -27,98 +27,102 @@ IMG_WIDTH = 128
 IMG_HEIGHT = 128
 IMG_CHANNELS = 3
 
-#TRAIN_PATH = '/cephyr/NOBACKUP/groups/snic2021-23-496/kaggle_data/'
-TRAIN_PATH = sys.argv[1]
+# TRAIN_PATH = '/home/inf-54-2020/experimental_cop//kaggle_data/'
+# #TRAIN_PATH = sys.argv[1]
 
-#TEST_PATH = 'stage1_test/'
-#X_test = np.load('/home/inf-54-2020/experimental_cop/scripts/X_test_size128.npy')
-train_ids = next(os.walk(TRAIN_PATH))[1]
-#test_ids = next(os.walk(TEST_PATH))[1]
+# #TEST_PATH = 'stage1_test/'
+# #X_test = np.load('/home/inf-54-2020/experimental_cop/scripts/X_test_size128.npy')
+# train_ids = next(os.walk(TRAIN_PATH))[1]
+# #test_ids = next(os.walk(TEST_PATH))[1]
 
-# X_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
-# Y_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+# # X_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
+# # Y_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
 
-X_train = []
-Y_train = []
-print('Resizing training images and masks')
-for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
-    path = TRAIN_PATH + id_
-    img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
-    img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-    X_train.append(img)  #Fill empty X_train with values from img
-    mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-    for mask_file in next(os.walk(path + '/masks/'))[2]:
-        mask_ = imread(path + '/masks/' + mask_file)
-        mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant',  
-                                      preserve_range=True), axis=-1)
-        mask = np.maximum(mask, mask_)  
+# X_train = []
+# Y_train = []
+# print('Resizing training images and masks')
+# for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
+#     path = TRAIN_PATH + id_
+#     img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
+#     img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+#     X_train.append(img)  #Fill empty X_train with values from img
+#     mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+#     for mask_file in next(os.walk(path + '/masks/'))[2]:
+#         mask_ = imread(path + '/masks/' + mask_file)
+#         mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant',  
+#                                       preserve_range=True), axis=-1)
+#         mask = np.maximum(mask, mask_)  
             
-    Y_train.append(mask)   
+#     Y_train.append(mask)   
 
 ##########################
-#X_train = np.load('/home/inf-54-2020/experimental_cop/scripts/X_train_size512.npy')
-#Y_train = np.load('/home/inf-54-2020/experimental_cop/scripts/Y_train_size512.npy')
 
-TRAIN_IMG_DIR = sys.argv[2]
-M_TRAIN_IMG_DIR = sys.argv[3]
+X_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kd_X_train_size128.npy')
+Y_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kd_Y_train_size128.npy')
 
-img_dir_id = [] #list of dir ids containing patches of the certain image
-ind_im_ids = [] #create an empty list for the ids of the individual images found in the subdir
-n1 = 0
-for root, subdirectories, files in sorted(os.walk(TRAIN_IMG_DIR)):
-    #print(root)
-    for subdirectory in subdirectories:
-        file_path = os.path.join(root, subdirectory)
-        #print(subdirectory)
-        for f in os.listdir(file_path):
-            if f.endswith('.png'):
-                #print(f)
-                img_path=file_path + '/' + f   #create first of dic values, i.e the path
-                #print(img_path)
-                #print(img_path)
-                #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
-                img = imread(img_path)[:,:,:IMG_CHANNELS]
-                img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-                #X_train[n1] = img  #Fill empty X_train with values from img
-                X_train.append(img)
-                #print(str(n1) + ' one loop of X_train done!')
-                n1 += 1
+# X_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/X_train_size128.npy')
+# Y_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/Y_train_size128.npy')
+
+# TRAIN_IMG_DIR = sys.argv[2]
+# M_TRAIN_IMG_DIR = sys.argv[3]
+
+# img_dir_id = [] #list of dir ids containing patches of the certain image
+# ind_im_ids = [] #create an empty list for the ids of the individual images found in the subdir
+# n1 = 0
+# for root, subdirectories, files in sorted(os.walk(TRAIN_IMG_DIR)):
+#     #print(root)
+#     for subdirectory in subdirectories:
+#         file_path = os.path.join(root, subdirectory)
+#         #print(subdirectory)
+#         for f in os.listdir(file_path):
+#             if f.endswith('.png'):
+#                 #print(f)
+#                 img_path=file_path + '/' + f   #create first of dic values, i.e the path
+#                 #print(img_path)
+#                 #print(img_path)
+#                 #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+#                 img = imread(img_path)[:,:,:IMG_CHANNELS]
+#                 img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+#                 #X_train[n1] = img  #Fill empty X_train with values from img
+#                 X_train.append(img)
+#                 #print(str(n1) + ' one loop of X_train done!')
+#                 n1 += 1
    
-X_train=np.array(X_train)
-#np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size128.npy', X_train)
+# X_train=np.array(X_train)
+# #np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size128.npy', X_train)
 
-print('Images saved into array!')
-n2 = 0
-for root, subdirectories, files in sorted(os.walk(M_TRAIN_IMG_DIR)):
-    #print(root)
-    for subdirectory in subdirectories:
-        file_path = os.path.join(root, subdirectory)
-        #print(subdirectory)
-        for m in os.listdir(file_path):
-            if m.endswith('.png'):
-                #print(f)
-                img_path=file_path + '/' + m   #create first of dic values, i.e the path
-                #print(img_path)
-                #print(img_path)
-                #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
-                img = imread(img_path)[:,:,:1]
-                img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-                #X_train[n1] = img  #Fill empty X_train with values from img
-                Y_train.append(img)
-                #print(str(n1) + ' one loop of Y_train done!')
-                n1 += 1
+# print('Images saved into array!')
+# n2 = 0
+# for root, subdirectories, files in sorted(os.walk(M_TRAIN_IMG_DIR)):
+#     #print(root)
+#     for subdirectory in subdirectories:
+#         file_path = os.path.join(root, subdirectory)
+#         #print(subdirectory)
+#         for m in os.listdir(file_path):
+#             if m.endswith('.png'):
+#                 #print(f)
+#                 img_path=file_path + '/' + m   #create first of dic values, i.e the path
+#                 #print(img_path)
+#                 #print(img_path)
+#                 #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+#                 img = imread(img_path)[:,:,:1]
+#                 img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+#                 #X_train[n1] = img  #Fill empty X_train with values from img
+#                 Y_train.append(img)
+#                 #print(str(n1) + ' one loop of Y_train done!')
+#                 n1 += 1
 
-            else:
-                continue
-Y_train=np.array(Y_train)
+#             else:
+#                 continue
+# Y_train=np.array(Y_train)
 
-np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_kagl_own_s512.npy', X_train)
-np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_kagl_own_s512.npy', Y_train)
+# np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_kagl_own_s512.npy', X_train)
+# np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_kagl_own_s512.npy', Y_train)
 
-#np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size128.npy', Y_train)
-print(Y_train.shape)
-print(Y_train)
-print('masks saved into array!')
+# #np.save('/home/inf-54-2020/experimental_cop/scripts/Y_train_size128.npy', Y_train)
+# print(Y_train.shape)
+# print(Y_train)
+# print('masks saved into array!')
 ###########
 # test images
 #X_test = np.zeros((len(test_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
@@ -235,7 +239,8 @@ model.summary()
 ################################
 #Modelcheckpoint
 #cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/kaggle_model_size244.h5"
-cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/kaggle_model_size128.h5"
+cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kaggle_model_size128.h5"
+cp_save_path = "/home/inf-54-2020/experimental_cop/scripts/working_models/kaggle_model_size128.h5"
 
 checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
 
@@ -256,7 +261,7 @@ plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig('plot1_kaggledata.png')
+plt.savefig('plot1_kaggledata128.png')
 
 # summarize history for loss
 plt.plot(history.history['loss'])
@@ -265,7 +270,7 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig('plot2_kaggledata.png')
+plt.savefig('plot2_kaggledata128.png')
 
 
 print('Done.')

@@ -21,43 +21,27 @@ from skimage import io, img_as_ubyte
 import random
 import os
 from scipy.ndimage import rotate
-import tqdm
+from tqdm import tqdm
 import albumentations as A
 images_to_generate=2000
+import cv2
+from skimage.io import imread, imshow
+from skimage.transform import resize
 
 #('/home/inf-54-2020/experimental_cop/Train_H_Final/Train/20x_1_H_Final.jpg',
 
 # '/home/inf-54-2020/experimental_cop/Train_H_Final/Masks/10x__1_H_Final.tif')
 
+IMG_WIDTH = 512
+IMG_HEIGHT = 512
+IMG_CHANNELS = 3
 
-images_path='/home/inf-54-2020/experimental_cop/Train_H_Final/Train/' #path to original images
+i_m_path='/home/inf-54-2020/experimental_cop/kaggle_data/' #path to original images
 masks_path = '/home/inf-54-2020/experimental_cop/Train_H_Final/Masks/'
-img_augmented_path='/home/inf-54-2020/experimental_cop/kaggle_data/kaggle_Aug_Img/' # path to store aumented images
-msk_augmented_path="/home/inf-54-2020/experimental_cop/kaggle_data/kaggle_Aug_Mask/" # path to store aumented images
+img_augmented_path='/home/inf-54-2020/experimental_cop/kaggle_aug_img/' # path to store aumented images
+msk_augmented_path="/home/inf-54-2020/experimental_cop/kaggle_aug_mask/" # path to store aumented images
 images=[] # to store paths of images from folder
 masks=[]
-
-img_ids = next(os.walk(images_path))[1]
-masks_path = next(os.walk(masks_path))[1]
-
-for i, im in tqdm(enumerate(sorted(os.listdir(images_path)))):
-    #print(i)
-    #print(im)
-    images.append(os.path.join(images_path,im))
-for i, msk in tqdm(enumerate(sorted(os.listdir(masks_path)))):
-    masks.append(os.path.join(masks_path,msk))
-
-# =============================================================================
-# for im in os.listdir(images_path):  # read image name from folder and append its path into "images" array     
-#     #print(im)
-#     images.append(os.path.join(images_path,im))
-# for msk in os.listdir(masks_path):  # read image name from folder and append its path into "images" array     
-#     #print(msk)
-#     masks.append(os.path.join(masks_path,msk))
-# 
-# =============================================================================
-print(images)
-print(masks)
 
 aug = A.Compose([
     A.VerticalFlip(p=0.5),              
@@ -69,10 +53,21 @@ aug = A.Compose([
     ]
 )
 
-#random.seed(42)
 
-i=1   # variable to iterate till images_to_generate
-
+#get the images and corresponding masks, save into a list
+img_ids = next(os.walk(i_m_path))[1]
+for n, id_ in tqdm(enumerate(img_ids), total=len(img_ids)):   
+    path = i_m_path + id_
+    original_image = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
+    original_image = resize(original_image, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+    images.append(original_image)
+    i=1   # variable to iterate till images_to_generate
+    
+    mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+    for mask_file in next(os.walk(path + '/masks/'))[2]:
+        mask = imread(path + '/masks/' + mask_file)
+        mask = resize(mask, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+    masks.append(mask)
 
 while i<=images_to_generate: 
     number = random.randint(0, len(images)-1)  #Pick a number to select an image & masks
@@ -99,3 +94,18 @@ while i<=images_to_generate:
     io.imsave(new_image_path, transformed_image)
     io.imsave(new_mask_path, transformed_mask)
     i =i+1
+
+
+# =============================================================================
+# for im in os.listdir(images_path):  # read image name from folder and append its path into "images" array     
+#     #print(im)
+#     images.append(os.path.join(images_path,im))
+# for msk in os.listdir(masks_path):  # read image name from folder and append its path into "images" array     
+#     #print(msk)
+#     masks.append(os.path.join(masks_path,msk))
+# 
+# =============================================================================
+
+
+#random.seed(42)
+
