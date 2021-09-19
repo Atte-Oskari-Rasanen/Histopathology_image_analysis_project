@@ -45,22 +45,34 @@ np.random.seed = seed
 
 #you need two functions for X_train and Y_train. One for importing kaggle, one for importing own
 #img dims need to be divisible by 32
-
+print('Starting!')
 #To fix the memory issue use train_on_batch. First need to get the numpy arrays. 
 #For this make 3 sets (for images and masks): each set contains kaggle data + 1/3 
 #of the own data, then the create a numpy array for the rest (2/3rds). 
-IMG_WIDTH = 512
+IMG_WIDTH = 512  #these dims needed IF you are to transform the kaggle arrays 
+#back to images but in different dir format (needed for fit_generator while training a model)
 IMG_HEIGHT = 512
-IMG_CHANNELS = 3
+IMG_CHANNELS = 2
 # cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/working_models/kaggle_model'
 # model_segm = keras.models.load_model(cp_save_path)
 kaggle_dir = '/home/inf-54-2020/experimental_cop/kaggle_data/'
+
+# kaggle_dir = sys.argv[1]
+
+# i_13 = sys.argv[2]
+# i_23 = sys.argv[3]
+# i_33 = sys.argv[4]
+# m_13 = sys.argv[5]
+# m_23 = sys.argv[6]
+# m_33 = sys.argv[7]
 val_kaggle_dir = '/home/inf-54-2020/experimental_cop/kaggle_data_val/'
 
+# # own_img_dirs = [i_13, i_23, i_33]
+# # own_masks_dirs = [m_13, m_23, m_33]
 
 own_img_dirs = ['/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/OneThird/', '/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/TwoThird/', '/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Img/ThirdThird/']
 own_masks_dirs = ['/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Mask/OneThird/', '/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Mask/TwoThird/', '/home/inf-54-2020/experimental_cop/Train_H_Final/Aug_Mask/ThirdThird/']
-val_own_data_dir = 'kaggle_data_val'
+# val_own_data_dir = 'kaggle_data_val'
 
 
 train_ids = next(os.walk(kaggle_dir))[1]
@@ -70,7 +82,11 @@ Y_train = []
 
 for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
     path = kaggle_dir + id_
-    img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
+    #img = imread(path + '/images/' + id_ + '.png')[:,:,:2]  
+    img = imread(path + '/images/' + id_ + '.png')  
+    print(img.shape)
+    img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+    print(img.shape)
     img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
     X_train.append(img)  #Fill empty X_train with values from img
     mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
@@ -82,76 +98,85 @@ for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):
             
     Y_train.append(mask)   
 
-np.save('/home/inf-54-2020/experimental_cop/scripts/np_datas/X_Dataset_k_s512.npy', X_train)
-np.save('/home/inf-54-2020/experimental_cop/scripts/np_datas/Y_Dataset_k_s512.npy', Y_train)
-print('kaggle data saved!')
-def import_data(directory, data_arr, IMG_CHANNELS):
-    for root, subdirectories, files in sorted(os.walk(directory)):
-    #print(root)
-        for subdirectory in subdirectories:
-            file_path = os.path.join(root, subdirectory)
-            #print(subdirectory)
-            for f in os.listdir(file_path):
-                if f.endswith('.png'):
-                    #print(f)
-                    img_path=file_path + '/' + f   #create first of dic values, i.e the path
-                    #print(img_path)
-                    #print(img_path)
-                    #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
-                    try:
-                        img = imread(img_path)[:,:,:IMG_CHANNELS]
-                        img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-                    except IndexError:
-                        pass
-                    #X_train[n1] = img  #Fill empty X_train with values from img
-                    data_arr.append(img)
-    return(data_arr)
+np_path = '/home/inf-54-2020/experimental_cop/scripts/np_data/'
+np.save(np_path +'X_Dataset_k_s128.npy', X_train)
+np.save(np_path + 'Y_Dataset_k_s128.npy', Y_train)
 
-own_imgs_part_a = own_img_dirs[0]
-own_imgs_part_b = own_img_dirs[1]
-own_imgs_part_c = own_img_dirs[2]
+# train_ids = next(os.walk(val_kaggle_dir))[1]
 
-own_masks_part_a = own_masks_dirs[0]
-own_masks_part_b = own_masks_dirs[1]
-own_masks_part_c = own_masks_dirs[2]
-
-empty_X = []
-empty_Y = []
-X_train_a = import_data(own_imgs_part_a, empty_X, 3)
-Y_train_a = import_data(own_masks_part_a, empty_Y, 1)
-np.save('/home/inf-54-2020/experimental_cop/scripts/np_datas/X_Dataset_a_s512.npy', X_train_a)
-np.save('/home/inf-54-2020/experimental_cop/scripts/np_datas/Y_Dataset_a_s512.npy', Y_train_a)
-
-print('dataset a saved!')
-
-X_train_b = import_data(own_imgs_part_b, empty_X, 3)
-Y_train_b = import_data(own_masks_part_b, empty_Y, 1)
-np.save('/home/inf-54-2020/experimental_cop/scripts/np_datas/X_Dataset_b_s512.npy', X_train_b)
-np.save('/home/inf-54-2020/experimental_cop/scripts/np_datas/Y_Dataset_b_s512.npy', Y_train_b)
-
-print('dataset b saved!')
-
-X_train_c = import_data(own_imgs_part_b, empty_X, 3)
-Y_train_c = import_data(own_masks_part_b, empty_Y, 1)
-np.save('/home/inf-54-2020/experimental_cop/scripts/np_datas/X_Dataset_c_s512.npy', X_train_c)
-np.save('/home/inf-54-2020/experimental_cop/scripts/np_datas/Y_Dataset_c_s512.npy', Y_train_c)
-print('dataset c saved!')
+# for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
+#     path = val_kaggle_dir + id_
+#     img = imread(path + '/images/' + id_ + '.png')  
+#     print(img.shape)
+#     img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
+#     print(img.shape)
+#     img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+#     X_train.append(img)  #Fill empty X_train with values from img
+#     mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+#     for mask_file in next(os.walk(path + '/masks/'))[2]:
+#         mask_ = imread(path + '/masks/' + mask_file)
+#         mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant',  
+#                                       preserve_range=True), axis=-1)
+#         mask = np.maximum(mask, mask_)  
+            
+#     Y_train.append(mask)   
+# np_path = '/home/inf-54-2020/experimental_cop/scripts/np_data/'
+# np.save(np_path +'val_X_Dataset_k_s128.npy', X_train)
+# np.save(np_path + 'val_Y_Dataset_k_s128.npy', Y_train)
 
 
-# #now save the rest of own data into Datasets b
+# # print('kaggle data saved!')
+# def import_data(directory, data_arr, IMG_CHANNELS):
+#     for root, subdirectories, files in sorted(os.walk(directory)):
+#     #print(root)
+#         for subdirectory in subdirectories:
+#             file_path = os.path.join(root, subdirectory)
+#             #print(subdirectory)
+#             for f in os.listdir(file_path):
+#                 if f.endswith('.png'):
+#                     #print(f)
+#                     img_path=file_path + '/' + f   #create first of dic values, i.e the path
+#                     #print(img_path)
+#                     #print(img_path)
+#                     #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+#                     try:
+#                         img = imread(img_path)[:,:,:IMG_CHANNELS]
+#                         img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+#                     except IndexError:
+#                         pass
+#                     #X_train[n1] = img  #Fill empty X_train with values from img
+#                     data_arr.append(img)
+#     return(data_arr)
 
-# # same es the train_generator    
-# validation_generator = test_datagen.flow_from_directory(
-#         'data/validation',
-#         target_size=(150, 150),
-#         batch_size=32,
-#         class_mode='binary')
+# own_imgs_part_a = own_img_dirs[0]
+# own_imgs_part_b = own_img_dirs[1]
+# own_imgs_part_c = own_img_dirs[2]
 
-# # loads sequentially images and feeds them to the model. 
-# # the batch size is set in the constructor 
-# model_segm.fit_generator(
-#         train_generator,
-#         samples_per_epoch=2000,
-#         nb_epoch=50,
-#         validation_data=validation_generator,
-#         nb_val_samples=800)
+# own_masks_part_a = own_masks_dirs[0]
+# own_masks_part_b = own_masks_dirs[1]
+# own_masks_part_c = own_masks_dirs[2]
+
+# empty_X = []
+# empty_Y = []
+# X_train_a = import_data(own_imgs_part_a, empty_X, 1)
+# Y_train_a = import_data(own_masks_part_a, empty_Y, 1)
+# np.save('/home/inf-54-2020/experimental_cop/scripts/np_data/BW_X_Dataset_a_s512.npy', X_train_a)
+# np.save('/home/inf-54-2020/experimental_cop/scripts/np_data/BW_Y_Dataset_a_s512.npy', Y_train_a)
+
+# # print('dataset a saved!')
+
+# X_train_b = import_data(own_imgs_part_b, empty_X, 1)
+# Y_train_b = import_data(own_masks_part_b, empty_Y, 1)
+# np.save('/home/inf-54-2020/experimental_cop/scripts/np_data/BW_X_Dataset_b_s512.npy', X_train_b)
+# np.save('/home/inf-54-2020/experimental_cop/scripts/np_data/BW_Y_Dataset_b_s512.npy', Y_train_b)
+
+# print('dataset b saved!')
+
+# X_train_c = import_data(own_imgs_part_c, empty_X, 1)
+# Y_train_c = import_data(own_masks_part_c, empty_Y, 1)
+# np.save('/home/inf-54-2020/experimental_cop/scripts/np_data/BW_X_Dataset_c_s512.npy', X_train_c)
+# np.save('/home/inf-54-2020/experimental_cop/scripts/np_data/BW_Y_Dataset_c_s512.npy', Y_train_c)
+# print('dataset c saved!')
+
+
+

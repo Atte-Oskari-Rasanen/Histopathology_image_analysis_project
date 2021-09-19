@@ -29,14 +29,19 @@ IMG_HEIGHT = 512
 IMG_CHANNELS = 3
 
 # TRAIN_PATH = sys.argv[1]
-# # TRAIN_IMG_DIR = sys.argv[2]
-# # M_TRAIN_IMG_DIR = sys.argv[3]
+TRAIN_PATH = '/home/inf-54-2020/experimental_cop/Train_H_Final/Train_by_batches/Images/'
+MASK_PATH = '/home/inf-54-2020/experimental_cop/Train_H_Final/Masks_by_batches/Masks/'
+
+VAL_IMG_PATH = '/home/inf-54-2020/experimental_cop/Val_H_Final/All_imgs/'
+VAL_MASK_PATH = '/home/inf-54-2020/experimental_cop/Val_H_Final/Good_full_masks/Masks/'
+# # # TRAIN_IMG_DIR = sys.argv[2]
+# # # M_TRAIN_IMG_DIR = sys.argv[3]
 # train_ids = next(os.walk(TRAIN_PATH))[1]
 
-# # X_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
-# # Y_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-# X_train = []
-# Y_train  = []
+# X_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
+# Y_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
+# # X_train = []
+# # Y_train  = []
 # print('Resizing training images and masks')
 # for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
 #     path = TRAIN_PATH + id_
@@ -53,11 +58,11 @@ IMG_CHANNELS = 3
 #     Y_train[n] = mask   
 
 # print('Done!')
-# np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_size128.npy', X_train)
-# np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/Y_train_size128.npy', Y_train)
+# np.save('/home/inf-54-2020/experimental_cop/scripts/np_data/X_train_s512.npy', X_train)
+# np.save('/home/inf-54-2020/experimental_cop/scripts/np_data/Y_train_s512.npy', Y_train)
 
-X_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kd_X_train_size128.npy')
-Y_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kd_Y_train_size128.npy')
+# X_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kd_X_train_size128.npy')
+# Y_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kd_Y_train_size128.npy')
 
 # image_x = random.randint(0, len(train_ids))
 # imshow(X_train[image_x])
@@ -65,6 +70,112 @@ Y_train = np.load('/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/kd_Y_train_si
 # imshow(np.squeeze(Y_train[image_x]))
 # plt.show()
 
+# img_dir_id = [] #list of dir ids containing patches of the certain image
+# ind_im_ids = [] #create an empty list for the ids of the individual images found in the subdir
+X_train = []
+Y_train = []
+n1 = 0
+
+for root, subdirectories, files in sorted(os.walk(TRAIN_PATH)):
+    #print(root)
+    for subdirectory in subdirectories:
+        file_path = os.path.join(root, subdirectory)
+        #print(subdirectory)
+        for f in os.listdir(file_path):
+            if f.endswith('.png'):
+                #print(f)
+                img_path=file_path + '/' + f   #create first of dic values, i.e the path
+                #print(img_path)
+                #print(img_path)
+                #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+                img = imread(img_path)[:,:,:IMG_CHANNELS]
+                img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+                #X_train[n1] = img  #Fill empty X_train with values from img
+                X_train.append(img)
+                print(str(n1) + ' loop of X_train done!')
+                n1 += 1
+   
+# X_train=np.array(X_train)
+np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size512_All.npy', X_train)
+
+print('Images saved into array!')
+n2 = 0
+for root, subdirectories, files in sorted(os.walk(MASK_PATH)):
+    #print(root)
+    for subdirectory in subdirectories:
+        file_path = os.path.join(root, subdirectory)
+        #print(subdirectory)
+        for m in os.listdir(file_path):
+            if m.endswith('.png'):
+                #print(f)
+                img_path=file_path + '/' + m   #create first of dic values, i.e the path
+                #print(img_path)
+                #print(img_path)
+                #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+                img = imread(img_path)[:,:,:1]
+                img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+                #X_train[n1] = img  #Fill empty X_train with values from img
+                Y_train.append(img)
+                print(str(n1) + ' loop of Y_train done!')
+                n1 += 1
+            else:
+                continue
+Y_train=np.array(Y_train)
+
+np.save('/home/inf-54-2020/experimental_cop/scripts/X_train_size512_All.npy', Y_train)
+
+# np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_kagl_own_s512.npy', X_train)
+# np.save('/cephyr/NOBACKUP/groups/snic2021-23-496/X_train_kagl_own_s512.npy', Y_train)
+X_val = []
+Y_val = []
+n1 = 0
+for root, subdirectories, files in sorted(os.walk(VAL_IMG_PATH)):
+    #print(root)
+    for subdirectory in subdirectories:
+        file_path = os.path.join(root, subdirectory)
+        #print(subdirectory)
+        for f in os.listdir(file_path):
+            if f.endswith('.png'):
+                #print(f)
+                img_path=file_path + '/' + f   #create first of dic values, i.e the path
+                #print(img_path)
+                #print(img_path)
+                #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+                img = imread(img_path)[:,:,:IMG_CHANNELS]
+                img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+                #X_train[n1] = img  #Fill empty X_train with values from img
+                X_val.append(img)
+                print(str(n1) + ' loop of X_val done!')
+                n1 += 1
+   
+# X_train=np.array(X_train)
+np.save('/home/inf-54-2020/experimental_cop/scripts/X_val_size512_All.npy', X_train)
+
+print('Images saved into array!')
+n2 = 0
+for root, subdirectories, files in sorted(os.walk(VAL_MASK_PATH)):
+    #print(root)
+    for subdirectory in subdirectories:
+        file_path = os.path.join(root, subdirectory)
+        #print(subdirectory)
+        for m in os.listdir(file_path):
+            if m.endswith('.png'):
+                #print(f)
+                img_path=file_path + '/' + m   #create first of dic values, i.e the path
+                #print(img_path)
+                #print(img_path)
+                #imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+                img = imread(img_path)[:,:,:1]
+                img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
+                #X_train[n1] = img  #Fill empty X_train with values from img
+                Y_val.append(img)
+                print(str(n1) + ' loop of Y_val done!')
+                n1 += 1
+            else:
+                continue
+Y_train=np.array(Y_train)
+
+np.save('/home/inf-54-2020/experimental_cop/scripts/Y_val_size512_All.npy', Y_train)
 
 
 
@@ -82,48 +193,48 @@ c2 = tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_initializer='h
 c2 = tf.keras.layers.Dropout(0.1)(c2)
 c2 = tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(c2)
 p2 = tf.keras.layers.MaxPooling2D((2, 2))(c2)
-
+ 
 c3 = tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(p2)
 c3 = tf.keras.layers.Dropout(0.2)(c3)
 c3 = tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(c3)
 p3 = tf.keras.layers.MaxPooling2D((2, 2))(c3)
-
+ 
 c4 = tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(p3)
 c4 = tf.keras.layers.Dropout(0.2)(c4)
 c4 = tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(c4)
 p4 = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))(c4)
-
+ 
 c5 = tf.keras.layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(p4)
 c5 = tf.keras.layers.Dropout(0.3)(c5)
 c5 = tf.keras.layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(c5)
 
-#Expansive path
+#Expansive path 
 u6 = tf.keras.layers.Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same')(c5)
 u6 = tf.keras.layers.concatenate([u6, c4])
 c6 = tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(u6)
 c6 = tf.keras.layers.Dropout(0.2)(c6)
 c6 = tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(c6)
-
+ 
 u7 = tf.keras.layers.Conv2DTranspose(64, (2, 2), strides=(2, 2), padding='same')(c6)
 u7 = tf.keras.layers.concatenate([u7, c3])
 c7 = tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(u7)
 c7 = tf.keras.layers.Dropout(0.2)(c7)
 c7 = tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(c7)
-
+ 
 u8 = tf.keras.layers.Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same')(c7)
 u8 = tf.keras.layers.concatenate([u8, c2])
 c8 = tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(u8)
 c8 = tf.keras.layers.Dropout(0.1)(c8)
 c8 = tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(c8)
-
+ 
 u9 = tf.keras.layers.Conv2DTranspose(16, (2, 2), strides=(2, 2), padding='same')(c8)
 u9 = tf.keras.layers.concatenate([u9, c1], axis=3)
 c9 = tf.keras.layers.Conv2D(16, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(u9)
 c9 = tf.keras.layers.Dropout(0.1)(c9)
 c9 = tf.keras.layers.Conv2D(16, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(c9)
-
+ 
 outputs = tf.keras.layers.Conv2D(1, (1, 1), activation='sigmoid')(c9)
-
+ 
 model = tf.keras.Model(inputs=[inputs], outputs=[outputs])
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 model.summary()
@@ -191,8 +302,7 @@ model.summary()
 
 ################################
 #Modelcheckpoint
-cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/working_models/kaggle_model_size128_layersfixed_noclips.h5"
-
+cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/model_k_s512_All.h5'
 # checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
 # # def scheduler(epoch, lr): #keeps the initial learning rate (e.g. 0.01) for the first 5 epocsh and
 # #                             #then decreases it significantly
@@ -224,18 +334,15 @@ cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/working_models/k
 #         tf.keras.callbacks.TensorBoard(log_dir='logs')]
 
 # history = model.fit(X_train, Y_train, validation_split=0.1, batch_size=16, epochs=50, callbacks=callbacks)
-model.save(cp_save_path)
 checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
 
 callbacks = [
-        tf.keras.callbacks.EarlyStopping(patience=4, monitor='val_loss'),
+        tf.keras.callbacks.EarlyStopping(patience=2, monitor='val_loss'),
         tf.keras.callbacks.TensorBoard(log_dir='logs')]
-
-
-checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path, verbose=1, save_best_only=True)
 #model.save_weights(cp_save_path)
 print('Model built and saved, now fitting it...')
-history = model.fit(X_train, Y_train, validation_split=0.1, batch_size=16, epochs=50, callbacks=callbacks)
+history = model.fit(X_train, Y_train, validation_data=(X_val, Y_val), batch_size=16, epochs=50, callbacks=callbacks)
+model.save(cp_save_path)
 
 
 plt.plot(history.history['accuracy'])
@@ -244,7 +351,7 @@ plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig('plot1_kaggledata_s128_layersfixd_noclip.png')
+plt.savefig('plot1_kaggle_s512_orig_unet_pasted.png')
 
 # summarize history for loss
 plt.plot(history.history['loss'])
@@ -253,7 +360,7 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
-plt.savefig('plot2_kaggledata_s128_layersfixd_noclip.png')
+plt.savefig('plot2_kaggle_s512_orig_unet_pasted.png')
 
 
 print('Done.')

@@ -1,3 +1,14 @@
+tensorflow.python.framework.errors_impl.InvalidArgumentError:  Conv2DCustomBackpropInput: Size of out_backprop doesn't match computed: actual = 16, computed = 32 spatial_dim: 1 input: 64 filter: 2 output: 16 stride: 2 dilation: 1
+         [[node U-Net/conv2d_transpose/conv2d_transpose (defined at ./scripts/v3_DS_U_net_in_batches.py:325) ]] [Op:__inference_train_function_4804]
+
+Function call stack:
+train_function
+
+2021-09-17 01:45:33.406131: W tensorflow/core/kernels/data/generator_dataset_op.cc:107] Error occurred when finalizing GeneratorDataset iterator: Failed precondition: Python interpreter state is not initialized. The process may be terminated.
+         [[{{node PyFunc}}]]
+
+
+
 #Build the model
 inputs = tf.keras.layers.Input((IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
 s = tf.keras.layers.Lambda(lambda x: x / 255)(inputs)
