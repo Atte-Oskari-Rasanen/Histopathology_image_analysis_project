@@ -17,20 +17,12 @@ import sys
 def brightness(factor, im): # if factor = 1, then image remains unchanged, if lower, then darkens the image and vice versa
     #image brightness enhancer
     enhancer = ImageEnhance.Brightness(im)
-    
-    # factor = 1 #gives original image
-    # im_output = enhancer.enhance(factor)
-    # im_output.save('original-image.png')
-    
+       
     factor = 0.5 #darkens the image
     im_output = enhancer.enhance(factor)
     #im_output.save('darkened-image.png')
     im_output = np.asarray(im_output)
     return im_output
-    # factor = 1.5 #brightens the image
-    # im_output = enhancer.enhance(factor)
-    # im_output.save('brightened-image.png')
-
 
 def remove_horiz_vert_lines(img):
     # Create the images that will use to extract the horizontal and vertical lines
@@ -59,24 +51,6 @@ def remove_horiz_vert_lines(img):
     # Inverse vertical image
     vertical = cv2.bitwise_not(vertical)
     # '''
-    # Extract edges and smooth image according to the logic
-    # 1. extract edges
-    # 2. dilate(edges)
-    # 3. src.copyTo(smooth)
-    # 4. blur smooth img
-    # 5. smooth.copyTo(src, edges)
-    # '''
-    # # Step 1
-    # # Step 2
-    # kernel = np.ones((2, 2), np.uint8)
-    # edges = cv2.dilate(img, kernel)
-    # # Step 3
-    # smooth = np.copy(vertical)
-    # # Step 4
-    # smooth = cv2.blur(smooth, (2, 2))
-    # # Step 5
-    # (rows, cols) = np.where(edges != 0)
-    # vertical[rows, cols] = smooth[rows, cols]
     return vertical
 # Load image, grayscale, Otsu's threshold
 # h_path = '/home/atte/Documents/PD_images/batch6/DAB15/DAB_15s_hunu_segm.png'
@@ -109,19 +83,6 @@ def hunu_ch_import_TH(im_path):
     (T, thresh_im) = cv2.threshold(im_blur, thresh, 255,
     	cv2.THRESH_BINARY)
     
-    #result = remove_horiz_vert_lines(thresh_im)
-    # kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10,10))
-    # opening = cv2.morphologyEx(thresh_im, cv2.MORPH_OPEN, kernel)
-    # result = 255 - opening
-    # result = cv2.dilate(result,kernel,iterations = 1)
-
-    # distance = ndi.distance_transform_edt(result)
-    # coords = peak_local_max(distance, footprint=np.ones((3, 3)), labels=result)
-    # mask = np.zeros(distance.shape, dtype=bool)
-    # mask[tuple(coords.T)] = True
-    # markers, _ = ndi.label(mask)
-    # labels = watershed(-distance, markers, mask=result)
-
     return thresh_im
 #cv2.imwrite('/home/atte/Documents/PD_images/batch6/t.png', threshInv)
 
