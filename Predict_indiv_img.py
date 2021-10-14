@@ -6,6 +6,8 @@ Created on Fri Sep 10 16:11:38 2021
 @author: atte
 """
 
+
+
 import os
 import random
 import numpy as np
@@ -26,21 +28,28 @@ import numpy as np
 import keras
 #from tifffile import imsave
 import ntpath
-
+import sys
 #####
 #apply this to large images, train the model with these smaller patches
 #when predicting on large images, break the image into smaller patches like this,
 #then apply the processes like model.predict on these arrays, append into segm_images
 #and then save as a whole slide image
+IMG_PROP = int(sys.argv[1])
+IMG_WIDTH = IMG_HEIGHT = IMG_PROP
 
-cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/working_models/kaggle_model_size128.h5"
-model_segm = keras.models.load_model(cp_save_path)
+# cp_save_path = "/cephyr/NOBACKUP/groups/snic2021-23-496/scripts/working_models/kaggle_model_size128.h5"
+cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/Plots_Unet/models/Full_Model_5ep_dice_diceloss_ps512_bs128_ep5.h5'
+# cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/Full_Model_5ep_dice_focal_s128.h5'
+
+model_segm = keras.models.load_model(cp_save_path, compile=False) #need to set compile as false since we are predicting, >
 
 # im_path = "/home/inf-54-2020/experimental_cop/batch3/"
-im_path = '/cephyr/NOBACKUP/groups/snic2021-23-496/batch3/Hu_D_30_min_10X.tif'
+im_path = "/home/inf-54-2020/experimental_cop/batch6/DAB_15sec_hunu.tif"
+im_path = '/home/inf-54-2020/experimental_cop/batch3/Hu_D_30_min_10X.tif'
+
 # path_to_img = '/home/atte/Documents/googletest.jpeg'
 # save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/"
-save_path = '/cephyr/NOBACKUP/groups/snic2021-23-496/All_imgs_segm/'
+save_path = "/home/inf-54-2020/experimental_cop/All_imgs_segm/"
 print(save_path)
 
 def Segment_img(img_path,model_segm):
@@ -69,26 +78,30 @@ def Segment_img(img_path,model_segm):
     except ValueError:
         pass
     #img = np.resize(img, (500,500))
-    split_width = 128
-    split_height = 128
-    
+    # img_h = img_w = IMG_PROP
+    split_height = split_width = IMG_PROP
+    print(split_height)
     X_points = start_points(img_w, split_width, 0.1)
     Y_points = start_points(img_h, split_height, 0.1)
     splitted_images = []
-
+    print('Points:')
+    print(X_points)
+    print(Y_points)
     for i in Y_points:
         for j in X_points:
             split = img[i:i+split_height, j:j+split_width]
+            print(i+split_height)
+            print(j+split_width)
             split = np.expand_dims(split, 0)
             print(split.shape)
             splitted_images.append(split) #now you have created a mask for the patch
-    segm_patches = []
     i = 0
-    
+    segm_patches = []
+    print('splitted images:'+str(len(splitted_images)))
     for patch in splitted_images:
         print(patch.shape)
         #print(patch.shape)
-        segm = (model_segm.predict(patch)[0,:,:,0] > 0.5).astype(np.uint8)
+        # segm = (model_segm.predict(patch)[0,:,:,0] > 0.5).astype(np.uint8)
         #print(segm)
         #segm_ready = segm.astype(np.uint8)
         segm = model_segm.predict(patch)
@@ -102,8 +115,7 @@ def Segment_img(img_path,model_segm):
         im = (im * 255).astype(np.uint8)
         segm_ready = (segm * 255).astype(np.uint8)
     
-        #print(segm)
-        im = Image.fromarray(im)
+        # im = Image.fromarray(im)
         
         #im = im.convert("L")
         #im.save(save_path + str(i) + 'patch_20x_1_remade.png')
@@ -122,6 +134,7 @@ def Segment_img(img_path,model_segm):
             index += 1
     #final_image = np.squeeze(final_image)  #need to get rid of the channel dim, otherwise PIL gives an error
     print(final_image.shape)
+    final_image = Image.fromarray(final_image)
     #final_image = np.array(final_image)
     #print(final_image.shape)
     #final_image = np.expand_dims(final_image,0)
@@ -130,8 +143,7 @@ def Segment_img(img_path,model_segm):
     #im = np.squeeze(segm)  #need to get rid of the channel dim, otherwise PIL gives an error
     #im = Image.fromarray((final_image * 255).astype(np.uint8))
     #im = Image.fromarray(final_image)
-    print(type(im))
-    return(im)
+    return(final_image)
     #cv2.imwrite("/cephyr/NOBACKUP/groups/snic2021-23-496/All_imgs_segm/S_Hunu_30min.png", final_image)
     
 #    plt.imsave(imagename + '_512S2.png', final_image)
@@ -143,5 +155,5 @@ def Segment_img(img_path,model_segm):
 # import imagej
 # ./ImageJ-linux32 --headless --console -macro ./Contrast_TH.ijm 'input directory=/home/inf-54-2020/experimental_cop/Segm_images/ output directory=/home/inf-54-2020/experimental_cop/Segm_images/TH_Otsu/ .png
 img = Segment_img(im_path, model_segm)
-img.save(save_path + 'S_Hunu_30min_128.png')
+img.save(save_path + '5ep_AlldatDiceonly_kaggleDice_S_DAB_Hunu_15sec_512.png')
 print('Done!')
