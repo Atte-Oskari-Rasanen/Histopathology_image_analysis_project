@@ -52,7 +52,7 @@ import numpy as np
 import PIL
 import os
 import re
-
+from watershed_hunu import *
 from PIL import Image, ImageFilter
 from skimage.filters import threshold_otsu, rank
 import scandir
@@ -72,9 +72,9 @@ def hunu_ch_import_TH(im_path, radius, sigma):
     binary = binary.astype(np.uint8)
     # binary = cv2.bitwise_not(binary) #invert colours so that cells are white and background is black
     # img = np.invert(binary)
-    img = util.invert(binary)
+    # img = util.invert(binary)
 
-    img = Image.fromarray(np.uint8(binary * 255))
+    # img = Image.fromarray(np.uint8(binary * 255))
 
     # img.save(outp + 'TEST_'+ filename_h)
 
@@ -155,10 +155,12 @@ all_ims_paths = []
 for (dirpath, dirnames, filenames) in os.walk(main_dir):
     all_ims_paths += [os.path.join(dirpath, file) for file in filenames]
 
+print('all imgs paths:')
 print(all_ims_paths)
 
 #create a colocalised folder under each animal id 
 for root, subdirectories, files in scandir.walk(main_dir):
+    print(subdirectories)
     for subdir in subdirectories:
         coloc_dir = subdir + '/' + 'Coloc'
         try:
@@ -168,18 +170,21 @@ for root, subdirectories, files in scandir.walk(main_dir):
         else:
             print ("Succeeded at creating the directory %s " % coloc_dir)
 
+
 for f in all_ims_paths:
     im_id = f.split('_')[1]
     match_hunu_col1 = list(filter(lambda x: im_id in x, all_ims_paths))
-    print('match_hunu_col1: ')
-    print(match_hunu_col1)
+    # print('match_hunu_col1: ')
+    # print(match_hunu_col1)
 
 #now you have matching image ids for col1a1, hunu and hunu_segm. you now go through 
 #the list containing all the images that were saved earlier to find the corresponding ones
 #and take the col1a1 and hunu_segm
 for fname in match_hunu_col1:
+    # print(fname)
     animal_id = fname.split('_')[-3]
     if 'col1a1' in fname:
+        print(fname)
         #get filename
         f = os.path.basename(fname)
         print('col1a1 name: ' + fname)
@@ -191,16 +196,18 @@ for fname in match_hunu_col1:
         res2 = fname[temp[nth - 1] + 1:]
         split_path = (res1 + " " + res2).split(" ")
         col1a1_th_path = split_path[0] + '/'
-        print('col1a1_th_path: ' + col1a1_th_path)
+        # print('col1a1_th_path: ' + col1a1_th_path)
         #coloc path corresponding to image:
         cv2.imwrite(col1a1_th_path + 'TH_' + f, col1a1)
-        print('thresholded col1a1 saved at '+ col1a1_th_path)
+        # print('thresholded col1a1 saved at '+ col1a1_th_path)
 
     if 'Segm' in fname and 'hunu' in fname:
+        print(fname)
         #get filename
-        f = os.path.basename(fname)
+        orig_im = os.path.basename(fname)
         print('hunu_segm name: ' + fname)
-        hunu = hunu_ch_import_TH(fname, 50, 20)
+        hunu = hunu_ch_import_TH(fname, 50, 15)
+        watershedded_hunu = watershedding(fname, hunu)
         splt_char = "/"
         nth = 4
         temp = [x.start() for x in re.finditer(splt_char, fname)]
@@ -212,7 +219,7 @@ for fname in match_hunu_col1:
         # coloc_path = split_path + '/' + animal_id + '_Coloc'
         #coloc path corresponding to image:
         # print(coloc_path)
-        hunu.save(hunu_th_path + 'TH_' + f)
+        watershedded_hunu.save(hunu_th_path + 'TH_WS_' + orig_im)
         print('thresholded hunu saved at '+ hunu_th_path)
 
 #now both col1a1 and hunu channels have been postprocessed and thresholded. 
