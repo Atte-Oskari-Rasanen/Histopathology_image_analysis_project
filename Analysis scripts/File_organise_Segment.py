@@ -109,50 +109,41 @@ for root, subdirectories, files in scandir.walk(directory):
             #now you have created a directory under Deconvolved_ims with specific animal ID along with subdirs for 
             #hunu and col1a1. Now need to transfer the files from the original location to here.
             im_index = 0
-            try:
-                for file in os.listdir(subdir_path):
-                    # print('file path:' )
-                    # print(os.path.join(subdir, file))
-                    print('file:'+file)
-                    imagepath=root + '/'+subdir + "/" + file
-                    if '~' in imagepath:
-                        imagepath = imagepath.split('~')[0]
-                    print('imagepath: '+ imagepath)
-                    # if not imagefile.endswith('.tif') or imagefile.endswith('.jpg'): #exclude files not ending in .tif
-                    #     continue
-                    #print(imagepath)
-                    imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
-                    imagename = imagename.split('.')[0]
-                    id_hunu_col = next(uniq_id) # specific id for the corresponding hunu and its col1a1 image
-        
-                    imagename = str(im_index) + '_' +str(id_hunu_col) +'_'+ subdir + '_' #+ str(patch_size)
-                    # print(imagename)
-                    #get the threshold
-                    
-                    if 'col1a1' in file:
-                        print('file col1: ' + file)
-                        # Set the directory path where the file will be moved
-                        destination_path = col1a1_ch_dir + '/' + file
-                        try:
-                            new_location = shutil.copyfile(imagepath, destination_path)
-                        # new_location = shutil.move(imagepath, destination_path)
-                            print("The %s is moved to the location, %s" %(file, new_location))
-                            print('saved to ' + col1a1_ch_dir)
-                        except FileNotFoundError:
-                            pass
-                    if 'hunu' in file:
-                        print('file hunu: ' + file)
-                        destination_path = hunu_ch_dir + '/' + file
-                        try:
-                            new_location = shutil.copyfile(imagepath, destination_path)
-                            # new_location = shutil.move(imagepath, hunu_ch_dir)
-                            print("The %s is moved to the location, %s" %(imagepath, new_location))
-                        except FileNotFoundError:
-                            pass
+            for file in os.listdir(subdir_path):
+                # print('file path:' )
+                # print(os.path.join(subdir, file))
+                print('file:'+file)
+                imagepath=root + '/'+subdir + "/" + file
+                if '~' in imagepath:
+                    imagepath = imagepath.split('~')[0]
+                print('imagepath: '+ imagepath)
+                # if not imagefile.endswith('.tif') or imagefile.endswith('.jpg'): #exclude files not ending in .tif
+                #     continue
+                #print(imagepath)
+                imagename=ntpath.basename(imagepath)#take the name of the file from the path and save it
+                imagename = imagename.split('.')[0]
+                id_hunu_col = next(uniq_id) # specific id for the corresponding hunu and its col1a1 image
     
-                    im_index += 1
-            except FileNotFoundError:
-                pass
+                imagename = str(im_index) + '_' +str(id_hunu_col) +'_'+ subdir + '_' #+ str(patch_size)
+                # print(imagename)
+                #get the threshold
+                
+                if 'col1a1' in file:
+                    print('file col1: ' + file)
+                    # Set the directory path where the file will be moved
+                    destination_path = col1a1_ch_dir + '/' + file
+                    # new_location = shutil.copyfile(imagepath, destination_path)
+                    new_location = shutil.move(imagepath, destination_path)
+                    print("The %s is moved to the location, %s" %(file, new_location))
+                    print('saved to ' + col1a1_ch_dir)
+                if 'hunu' in file:
+                    print('file hunu: ' + file)
+                    destination_path = hunu_ch_dir + '/' + file
+                    # new_location = shutil.copyfile(imagepath, destination_path)
+                    new_location = shutil.move(imagepath, hunu_ch_dir)
+                    print("The %s is moved to the location, %s" %(imagepath, new_location))
+
+                im_index += 1
         else:
             continue
 print('Files reorganised! Starting segmentation...')
