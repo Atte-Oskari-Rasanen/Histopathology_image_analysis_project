@@ -27,6 +27,10 @@ def colocalise(hunu_im, col1a1_im):
     hunu_im = cv2.imread(hunu_im,0)
     col1a1_im = cv2.imread(col1a1_im,0)
     print(col1a1_im.shape)
+    # hunu_im = cv2.bitwise_not(hunu_im)
+
+    w,h = col1a1_im.shape
+    # hunu_im = hunu_im.reshape(w,h)
     # cv2.imwrite('/home/atte/Documents/PD_images/batch6/col1a1.png', col1a1_im)
     cnts, _ = cv2.findContours(col1a1_im, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #get the contours of the col1a1 
     #_ , contours, _ = cv2.findContours(threshInv,2,1)            
@@ -110,6 +114,8 @@ for hunu, col1a1 in file_pairs.items():
     filename = filename.split('.')[0]
     print('col1a1: ' +col1a1)
     coloc_im = colocalise(hunu,col1a1)
+    coloc_im = cv2.bitwise_not(coloc_im)
+
     cv2.imwrite(coloc_dir +'/' + filename + "_Coloc.png",coloc_im)
     # coloc_im = Image.fromarray(np.uint8(coloc_im * 255))
     # coloc_im.save(coloc_dir +'/' + filename + "_Coloc.png")
