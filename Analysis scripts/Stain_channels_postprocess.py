@@ -165,7 +165,7 @@ def colocalise(hunu_im, col1a1_im):
 # patch_size = int(sys.argv[2])
 # segm_model = sys.argv[3]
 main_dir = './deconv'
-main_dir = '/home/atte/Desktop/Testing_coloc/Deconvolved_ims'
+main_dir = '/home/atte/Desktop/Testing_coloc/Deconvolved_ims2'
 main_dir = sys.argv[1]
 print(main_dir)
 
