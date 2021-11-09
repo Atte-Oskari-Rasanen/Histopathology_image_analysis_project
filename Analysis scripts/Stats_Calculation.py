@@ -56,7 +56,7 @@ def calculations_hunu(img):
 def calculations_col1a1(img):
     stats_list = []
     binary = np.asarray(img).astype(np.uint8)
-    binary = cv2.bitwise_not(binary)
+    # binary = cv2.bitwise_not(binary)
     cnts, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #get the contours of the col1a1 
     contour_area = cv2.contourArea(cnts[0])
     # filename_c = os.path.basename(im_path)
@@ -120,8 +120,8 @@ def Global_otsu(img):
 segm_TH_dirs = []
 all_ims_paths = []
 
+# main_dir = sys.argv[1]
 main_dir = '/home/atte/Desktop/Testing_coloc/Deconvolved_ims2'
-
 #get all image paths:
 for (dirpath, dirnames, filenames) in os.walk(main_dir):
     all_ims_paths += [os.path.join(dirpath, file) for file in filenames]
@@ -183,10 +183,10 @@ for root, subdirectories, files in scandir.walk(main_dir):
                     im_path = file
                     # print('IM TO OPEN:' + im_path)
                     im_gray = cv2.imread(im_path,0)
-                    im_th = Global_otsu(im_gray)
-                    im_th = cv2.bitwise_not(im_th)
+                    # im_th = Global_otsu(im_gray)
+                    im_gray = cv2.bitwise_not(im_gray)
 
-                    Stats = calculations_hunu(im_th)
+                    Stats = calculations_hunu(im_gray)
                     hunu_coloc_stats_dict[filename]=Stats
                     
         if 'hunu' in subdir:
@@ -202,13 +202,12 @@ for root, subdirectories, files in scandir.walk(main_dir):
                     # print(file)
                     # filenames.append(file)
                     im_path = file
-                    im_gray = cv2.imread(im_path, cv2.IMREAD_GRAYSCALE)
-                    im_th = Global_otsu(im_gray)
-                    # im_th = cv2.bitwise_not(binary)
+                    im_gray = cv2.imread(im_path, 0)
+                    # im_th = Global_otsu(im_gray)
+                    im_gray = cv2.bitwise_not(im_gray) #need to invert colours since we had the colours other way around after imagej watershedding etc
 
-                    Stats = calculations_hunu(im_th)
+                    Stats = calculations_hunu(im_gray)
                     hunu_stats_dict[filename]=Stats
-    
 
 #Now I have a dictionary with the key being the imagename (pure hunu image or coloc one) and values
 #containing the relevant info (Nuclei Area, Nuclei count and total Area of the image-this last one is a sanity check)
@@ -265,7 +264,7 @@ N_hunu_coloc_I_total_hunus = []
 A_col1_I_total_hunus = []
 IDs = []
 
-
+Acol1_I_Ahunus = []
 #find matching hunu, coloc_hunu and col1a1 ones, get the calculations, save into dict as list value, the key will be the id info of the animal
 for key_hunu, h_v in hunu_stats_dict.items():
     for key_hunu_coloc, hc_v in hunu_coloc_stats_dict.items():
@@ -278,14 +277,16 @@ for key_hunu, h_v in hunu_stats_dict.items():
                 ids.append(ID)
                 values_hunu_coloc = hunu_coloc_stats_dict[key_hunu_coloc]
                 values_col1 = col1a1_dict[key_col1]
+                print('COL1A1 A: ' + str(values_col1[0]))
                 values_hunu = hunu_stats_dict[key_hunu]
+                print('HUNU A: ' + str(values_hunu[0]))
+                # #I-symbol used as division
+                # #Area of hunu-col1a1+ cells / Area of all hunu cells
+                # Ahunucol1_Acol1_I_Ahunu = values_hunu_coloc[0] / values_hunu[0]
+                # Ahunucol1_Acol1_I_Ahunus.append(Ahunucol1_Acol1_I_Ahunu)
+                # stats.append(Ahunucol1_Acol1_I_Ahunu)
                 
-                #I-symbol used as division
-                #Area of hunu-col1a1+ cells / Area of all hunu cells
-                Ahunucol1_Acol1_I_Ahunu = values_hunu_coloc[0] / values_hunu[0]
-                Ahunucol1_Acol1_I_Ahunus.append(Ahunucol1_Acol1_I_Ahunu)
-                stats.append(Ahunucol1_Acol1_I_Ahunu)
-                #Area of col1a1 / Area of all hunu cells
+                #Area of col1a1+ / Area of all hunu cells
                 Acol1_I_Ahunu = values_col1[0] / values_hunu[0]
                 Acol1_I_Ahunus.append(Acol1_I_Ahunu)
                 stats.append(Acol1_I_Ahunu)
@@ -320,12 +321,13 @@ import pandas as pd
 
 filenames = final_info.items()
 All_stats = list(filenames)
-df = pd.DataFrame(list(zip(IDs, Ahunucol1_Acol1_I_Ahunus, Acol1_I_Ahunus, Total_hunu_cells_list, hunu_colocs, N_hunu_coloc_I_total_hunus, A_col1_I_total_hunus)))
+df = pd.DataFrame(list(zip(IDs, Acol1_I_Ahunus, A_col1_I_total_hunus, Total_hunu_cells_list)))
 
 # df = pd.DataFrame(list(final_info.items()),columns = [ "A(HUNU+COL1A1+) / A(HUNU+)", "A(COL1A1+)/A(HUNU+)", "N(HUNU+)", "N(HUNU+COL1A1+)", "N(HUNU+COL1A1+)/N(HUNU+)", "A(COL1a1)/N(HUNU+)"]) 
-
+# We can keep (i) A(COL1A1+)/A(HUNU+), (ii) A(COL1a1)/N(HUNU+) and (iii) N(HUNU+)
 # df = pd.DataFrame(All_stats)
-df.columns = [ "Animal_ID", "A(HUNU+COL1A1+) / A(HUNU+)", "A(COL1A1+)/A(HUNU+)", "N(HUNU+)", "N(HUNU+COL1A1+)", "N(HUNU+COL1A1+)/N(HUNU+)", "A(COL1a1)/N(HUNU+)"]
+# df.columns = [ "Animal_ID", "A(HUNU+COL1A1+) / A(HUNU+)", "A(COL1A1+)/A(HUNU+)", "N(HUNU+)", "N(HUNU+COL1A1+)", "N(HUNU+COL1A1+)/N(HUNU+)", "A(COL1a1)/N(HUNU+)"]
+df.columns = [ "Animal_ID", "A(COL1A1+)/A(HUNU+)", "A(COL1a1)/N(HUNU+)", "N(HUNU+)"]
 
 
 # with open("/home/inf-54-2020/experimental_cop/scripts/Info.txt", "w") as out: #write the dataframe into an output file
