@@ -29,7 +29,7 @@ def calculations_hunu(img):
     binary = np.asarray(img).astype(np.uint8)
     # binary = cv2.bitwise_not(binary)
     cnts, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #get the contours of the col1a1 
-    contour_area = cv2.contourArea(cnts[0])
+    # contour_area = cv2.contourArea(cnts[0])
     # filename_h = os.path.basename(im_path)
     # stats_list.append(filename_h)
     contour_areas = []
@@ -121,11 +121,13 @@ segm_TH_dirs = []
 all_ims_paths = []
 
 # main_dir = sys.argv[1]
-main_dir = '/home/atte/Desktop/Testing_coloc/Deconvolved_ims2'
+main_dir = '/home/atte/Documents/PD_images/batch8_retry/18/18/Deconvolved_ims'
+
 #get all image paths:
 for (dirpath, dirnames, filenames) in os.walk(main_dir):
     all_ims_paths += [os.path.join(dirpath, file) for file in filenames]
 
+print('ALL_IMS_PATHS: '+ str(all_ims_paths))
 print('Main dir: ' + main_dir)
 #get all images that match the pattern
 # matches_list = []
@@ -164,14 +166,25 @@ from skimage.filters import threshold_otsu, rank
 #colocalised image with the corresponding id and this should be added into the column.
 import scandir
 
-files = glob.glob(main_dir +'/*png')
+All_files = []
+for root, subdirectories, files in scandir.walk(main_dir):
+    for subdir in subdirectories:
+        print('ALL SUBDIRS: ' + str(subdirectories))
+        filepaths = root + '/' + subdir
+        print("FILEPATHS " + filepaths)
+        files = glob.glob(filepaths +'/*.png')
+        All_files.append(files)
+
 for root, subdirectories, files in scandir.walk(main_dir):
     for subdir in subdirectories:
             # print(subdir)
         if 'Coloc' in subdir:
             subdir_p = root + '/' + subdir + '/'
+            print("Coloc path: -----  " + subdir_p)
             # print('subdir path: '+ subdir_p)
             files_subdir = glob.glob(subdir_p + '*.png')
+            print('FILES INSIDE COLOC: '+ str(files_subdir))
+
             # print('flies in subdir: '+ str(files_subdir))
             for file in files_subdir:
                 if 'WS' in file:
@@ -193,6 +206,8 @@ for root, subdirectories, files in scandir.walk(main_dir):
             subdir_p = root + '/' + subdir + '/'
             # print('subdir path: '+ subdir_p)
             files_subdir = glob.glob(subdir_p + '*.png')
+            print('FILES INSIDE hunu: '+ str(files_subdir))
+
             # print('flies in subdir: '+ str(files_subdir))
             for file in files_subdir: 
                 if 'WS' in file:
@@ -271,8 +286,11 @@ for key_hunu, h_v in hunu_stats_dict.items():
         for key_col1, h_col_v in col1a1_dict.items():
 
             if key_hunu_coloc[:18] == key_col1[:18] and key_hunu[:18]==key_col1[:18]:
-                ID = key_col1
-                ID = ID[:18]
+                im_name = key_col1.split('col1a1')[0]
+                # file_id = '_'.join(im_name[:8]), '_'.join(im_name[8:])
+                # file_id = file_id[0]
+
+                ID = im_name
                 # print('ID --- '+ID[:18])
                 ids.append(ID)
                 values_hunu_coloc = hunu_coloc_stats_dict[key_hunu_coloc]
@@ -318,6 +336,7 @@ for key_hunu, h_v in hunu_stats_dict.items():
 # df = pd.DataFrame(pd.np.empty((0, 7)))    
 import pandas as pd
 
+print(final_info)
 
 filenames = final_info.items()
 All_stats = list(filenames)
@@ -330,72 +349,12 @@ df = pd.DataFrame(list(zip(IDs, Acol1_I_Ahunus, A_col1_I_total_hunus, Total_hunu
 df.columns = [ "Animal_ID", "A(COL1A1+)/A(HUNU+)", "A(COL1a1)/N(HUNU+)", "N(HUNU+)"]
 
 
+# output_dir_results = "/home/atte/Desktop/Testing_coloc"
+# output_dir_results = sys.argv[2]
+output_dir_results = main_dir
 # with open("/home/inf-54-2020/experimental_cop/scripts/Info.txt", "w") as out: #write the dataframe into an output file
-with open("/home/atte/Desktop/Testing_coloc/Deconvolved_ims2/Results.csv", "w") as out: #write the dataframe into an output file
+with open(output_dir_results + "/Results.csv", "w") as out: #write the dataframe into an output file
 #write the dataframe into an output file
     df.to_csv(out, sep='\t')
     # df.to_string(out, index=None)
     print('output info file saved!')
-
-#         unit = 1.0 * cell_count_coloc / cell_count_h
-#         unit = str(unit)
-#         unit_list.append(unit)
-#         print(cell_count_h)
-#         print(cell_count_coloc)
-#         print(unit)
-
-                    
-#     #count hunu cells within col1a1
-#     labels_coloc = measure.label(coloc_cells) #create a binary format of the numpy array (object or background)
-#     cell_count_coloc=labels_coloc.max() #count the number of objects
-#     coloc_list.append(cell_count_coloc)
-#     #create coloc/#nuclei unit
-#     unit = 1.0 * cell_count_coloc / cell_count_h
-#     unit = str(unit)
-#     unit_list.append(unit)
-#     print(cell_count_h)
-#     print(cell_count_coloc)
-#     print(unit)
-
-
-                    
-                    
-# for hunu_cells_path, coloc_cells_path in dictionary.items():
-#     hunu_cells = cv2.imread(hunu_cells_path)
-#     coloc_cells = cv2.imread(coloc_cells_path)
-#     filename_h = os.path.basename(hunu_cells_path)
-#     filename_c = os.path.basename(coloc_cells_path)
-#     print(filename_h)
-#     print(filename_c)
-
-#     #count all hunu nuceli
-#     labels_h = measure.label(hunu_cells) #create a binary format of the numpy array (object or background)
-#     cell_count_h=labels_h.max() #count the number of objects
-#     h_c_list.append(cell_count_h)
-#     #count hunu cells within col1a1
-#     labels_coloc = measure.label(coloc_cells) #create a binary format of the numpy array (object or background)
-#     cell_count_coloc=labels_coloc.max() #count the number of objects
-#     coloc_list.append(cell_count_coloc)
-#     #create coloc/#nuclei unit
-#     unit = 1.0 * cell_count_coloc / cell_count_h
-#     unit = str(unit)
-#     unit_list.append(unit)
-#     print(cell_count_h)
-#     print(cell_count_coloc)
-#     print(unit)
-
-
-# filenames = ['DAB15sec','DAB30sec','DAB120s']
-
-# df = pd.DataFrame(list(zip(filenames, h_c_list, coloc_list, unit_list)))
-# df.columns = ["Filename", "Total # of HuNu cells", "# of Hunu cells colocalised with COL1A1", "#HUNU+COL1A1+ / HUNU+"]
-
-# with open("/home/inf-54-2020/experimental_cop/batch6/batch6_processed_ws/Info.txt", "w") as out: #write the dataframe into an output file
-# #write the dataframe into an output file
-#     df.to_string(out, index=None)
-#     print('output info file saved!')
-
-# # col_start = ["col_a", "col_b", "col_c"]
-# # col_add = ["Col_d", "Col_e", "Col_f"]
-# # a = pd.DataFrame(list(zip(col_start, col_add)))
-# # a.columns = ["Filename", "Total # of HuNu cells", "# of Hunu cells colocalised with COL1A1", "#HUNU+COL1A1+ / HUNU+"]
