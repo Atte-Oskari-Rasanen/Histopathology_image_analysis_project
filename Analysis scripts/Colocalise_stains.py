@@ -25,36 +25,45 @@ import sys
 
 def colocalise(hunu_im, col1a1_im):
     hunu_im = cv2.imread(hunu_im,0)
+    print(hunu_im.shape)
     col1a1_im = cv2.imread(col1a1_im,0)
-    print(col1a1_im.shape)
+    print("COL1A1 SHAPE: " + str(col1a1_im.shape))
     # hunu_im = cv2.bitwise_not(hunu_im)
-
-    w,h = col1a1_im.shape
+    h,w = col1a1_im.shape
+    hunu_im = Image.fromarray(hunu_im)
+    hunu_im = hunu_im.resize((w,h))
+    hunu_im = np.asarray(hunu_im)
+    print("HUNU SHAPE: " + str(hunu_im.shape))
+    hunu_im = cv2.bitwise_not(hunu_im)
+    
     # hunu_im = hunu_im.reshape(w,h)
     # cv2.imwrite('/home/atte/Documents/PD_images/batch6/col1a1.png', col1a1_im)
     cnts, _ = cv2.findContours(col1a1_im, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) #get the contours of the col1a1 
     #_ , contours, _ = cv2.findContours(threshInv,2,1)            
-    contours = sorted(cnts, key=cv2.contourArea)            #get the largest contour
+    # contours = sorted(cnts, key=cv2.contourArea)            #get the largest contour
     
     out_mask = np.zeros_like(hunu_im)
     
     #draw contours of col1a1 image onto the hunu one
-    # cv2.drawContours(hunu_im, contours, -1, (0, 0, 255), 2) #-1 means draw all contours, red color, 2 is the width of contour line
+    # cont = cv2.drawContours(hunu_im, cnts, -1, (0, 0, 255), 2) #-1 means draw all contours, red color, 2 is the width of contour line
     
     #use this when applying mask to the image of nuclei
     cv2.drawContours(out_mask, cnts, -1, 255, cv2.FILLED, 1)                                        
-    
-    #cv2.drawContours(Img, cnts, -1, (0, 0, 255), 2) #-1 means draw all contours, red color, 2 is the width of contour line
-    
+
+#cv2.drawContours(Img, cnts, -1, (0, 0, 255), 2) #-1 means draw all contours, red color, 2 is the width of contour line
+
     out=hunu_im.copy()
     out[out_mask == 0] = 255 #makes nuclei white on the black background
     # cv2.imwrite(outp + 'Blur_Coloc_' + filename_h, out)
+    plt.imshow(out)
+    # cv2.imwrite('/home/atte/Documents/PD_images//batch8_retry/Deconvolved_ims/25/COLOC_h.png', out)
+    out = cv2.bitwise_not(out)
     return(out)
     print('colocalised image created!')
 
-main_dir = '/home/atte/Desktop/Testing_coloc/Deconvolved_ims2'
-# main_dir = sys.argv[1]
-
+# main_dir = '/home/atte/Desktop/Testing_coloc/Deconvolved_ims2'
+main_dir = sys.argv[1]
+# main_dir = '/home/atte/Documents/PD_images/batch8_retry/18/18/Deconvolved_ims'
 coloc_dir = main_dir + '/Coloc'
 
 try:
@@ -72,13 +81,15 @@ for (dirpath, dirnames, filenames) in os.walk(main_dir):
 #get all images that match the pattern
 # matches_list = []
 
+# for filename in all_ims_paths:
+#     if 'WS' in filename:
+#         print(filename)
 file_pairs = {} #key: hunu_ws_th file, value: col1a1_th
 print('STARTING...')
 for f in all_ims_paths:
     # print(f)
     filename = os.path.basename(f)
     print(filename)
-
     #if 'Segm' in filename and 'hunu' in filename and 'WS' in filename:
     # if 'hunu' in filename and 'WS' in filename:
     if 'WS' in filename:
@@ -114,7 +125,7 @@ for hunu, col1a1 in file_pairs.items():
     filename = filename.split('.')[0]
     print('col1a1: ' +col1a1)
     coloc_im = colocalise(hunu,col1a1)
-    coloc_im = cv2.bitwise_not(coloc_im)
+    # coloc_im = cv2.bitwise_not(coloc_im)
 
     cv2.imwrite(coloc_dir +'/' + filename + "_Coloc.png",coloc_im)
     # coloc_im = Image.fromarray(np.uint8(coloc_im * 255))
