@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 import os
 import random
@@ -10,6 +9,7 @@ from tensorflow.keras.optimizers import schedules
 from tensorflow.keras import Model
 import matplotlib
 matplotlib.use('Agg')
+from datetime import datetime 
 
 from skimage.io import imread, imshow
 from skimage.transform import resize
@@ -47,7 +47,6 @@ def dice_coef_loss(y_true, y_pred):
     return 1-dice_coef(y_true, y_pred)
 
 seed = 42
-np.random.seed = seed
 def normalize(img):
     min = img.min()
     max = img.max()
@@ -139,7 +138,7 @@ all_train_imgs = len(os.listdir(TRAIN_PATH))
 def calculate_spe(y):
   return int(math.ceil((1. * y) / batch_size))
 steps_per_epoch = calculate_spe(all_train_imgs)
-epochs = 1
+epochs = 3
 
 '''
 Attention UNet
@@ -152,7 +151,7 @@ att_unet_model.compile(optimizer=Adam(lr = 1e-2), loss=dice_coef_loss,
 
 
 print(att_unet_model.summary())
-start2 = run_date
+start2 = datetime.now() 
 print('steps per epoch: ' + str(steps_per_epoch))
 print('number of training files: '+ str(all_train_imgs))
 # att_unet_history = att_unet_model.fit(X_train, Y_train, validation_split=0.3,
@@ -162,7 +161,7 @@ print('number of training files: '+ str(all_train_imgs))
 #                     epochs=1)
 history_att_unet = att_unet_model.fit_generator(train_generator, validation_data=val_generator, steps_per_epoch=steps_per_epoch, validation_steps=steps_per_epoch, epochs=epochs)
 
-stop2 = run_date
+stop2 = datetime.now()
 #Execution time of the model 
 execution_time_Att_Unet = stop2-start2
 print("Attention UNet execution time is: ", execution_time_Att_Unet)
@@ -186,7 +185,7 @@ att_res_unet_model.compile(optimizer=Adam(lr = 1e-2), loss=dice_coef_loss,
 print(att_res_unet_model.summary())
 
 
-start3 = run_date
+start3 = datetime.now() 
 # att_res_unet_history = att_res_unet_model.fit(X_train, Y_train, validation_split=0.3,
 #                     verbose=1,
 #                     batch_size = batch_size,
@@ -194,7 +193,7 @@ start3 = run_date
 #                     epochs=1)
 history_att_res_unet = att_res_unet_model.fit_generator(train_generator, validation_data=val_generator, steps_per_epoch=steps_per_epoch, validation_steps=steps_per_epoch, epochs=epochs)
 
-stop3 = run_date
+stop3 = datetime.now() 
 
 #Execution time of the model 
 execution_time_AttResUnet = stop3-start3
@@ -220,7 +219,12 @@ with open('custom_code_att_res_unet_history_df.csv', mode='w') as f:
 # history = unet_history
 histories = [history_att_unet, history_att_res_unet]
 
+plots_path =  "/home/inf-54-2020/experimental_cop/scripts/plots_unet/"
+
 for h in histories:
+    unets = [Att_Unet, Att_Res_Unet]
+    i=0
+    plot_name = unets[0]
     # plot the training and validation accuracy and loss at each epoch
     loss = h.history['loss']
     val_loss = h.history['val_loss']
@@ -232,23 +236,21 @@ for h in histories:
     plt.ylabel('Loss')
     plt.legend()
     plt.show()
-    figname = 'Plot1.png'
+    figname = plots_path + unets[i] + 'Plot_loss.png'
     plt.savefig(figname)
     
-    acc = h.history['Dice_coef']
+    acc = h.history['accuracy']
     #acc = history.history['accuracy']
-    val_acc = h.history['val_dice_coef']
+    val_acc = h.history['val_accuracy']
     #val_acc = history.history['val_accuracy']
     
     plt.plot(epochs, acc, 'y', label='Training Dice')
     plt.plot(epochs, val_acc, 'r', label='Validation Dice')
     plt.title('Training and validation Dice')
     plt.xlabel('Epochs')
-    plt.ylabel('Jacard')
+    plt.ylabel('Dice')
     plt.legend()
     plt.show()
-    figname = 'Plot2.png'
-    plt.savefig(figname)
-
+    figname = plots_path + unets[i] +'Plot_acc.png'
+    i=+1
 #######################################################
-
