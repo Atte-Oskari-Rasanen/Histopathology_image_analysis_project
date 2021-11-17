@@ -86,7 +86,9 @@ def hunu_ch_import_TH(im_path):
     
     (T, threshInv) = cv2.threshold(im_blur, thresh, 255,
     	cv2.THRESH_BINARY_INV)
-    threshInv = cv2.dilate(threshInv,kernel,iterations = 1)
+    # threshInv = cv2.dilate(threshInv,kernel,iterations = 1)
+
+    # threshInv = cv2.bitwise_not(threshInv)
 
     # binary = cv2.bitwise_not(binary) #invert colours so that cells are white and background is black
     # img = np.invert(binary)
@@ -110,9 +112,14 @@ def col1a1_ch_import_TH(im_path):
     im_blur = im_gray.filter(ImageFilter.GaussianBlur(5))
     im_blur = np.asarray(im_blur)
     
-    (T, threshInv) = cv2.threshold(im_blur, thresh, 255,
+    (T, threshInv) = cv2.threshold(img, thresh, 255,
     	cv2.THRESH_BINARY_INV)
-    # np.invert(threshInv)
+    threshInv = cv2.bitwise_not(threshInv)
+
+    kernel = np.ones((5,5),np.uint8)
+    threshInv = cv2.dilate(threshInv,kernel,iterations = 1)
+    threshInv = cv2.bitwise_not(threshInv)
+    threshInv = cv2.dilate(threshInv,kernel,iterations = 1)
 
     return threshInv
 #cv2.imwrite('/home/atte/Documents/PD_images/batch6/dab_binary_col1a1.png', threshInv)
@@ -164,8 +171,9 @@ def colocalise(hunu_im, col1a1_im):
 # directory = sys.argv[1]
 # patch_size = int(sys.argv[2])
 # segm_model = sys.argv[3]
-main_dir = './deconv'
-main_dir = '/home/atte/Desktop/Testing_coloc/Deconvolved_ims2'
+# main_dir = './deconv'
+# main_dir = '/home/atte/Desktop/Testing_coloc/Deconvolved_ims2'
+# main_dir = '/home/atte/Documents/PD_images/batch8_retry/Deconvolved_ims'
 main_dir = sys.argv[1]
 print(main_dir)
 
@@ -223,7 +231,9 @@ for f in all_ims_paths:
             # print(filename)
             #get filename
             print('col1a1 name: ' + filename)
+            print('col1a1 file path: '+ file_path)
             col1a1 = col1a1_ch_import_TH(file_path)
+            print('col1a1 shape: ' + str(col1a1.shape))
             splt_char = "/"
             # nth = 4
             # split_path = file_path.split('/')
@@ -240,13 +250,29 @@ for f in all_ims_paths:
             # col1a1_th_path = col1a1_th_path[0] + '/'
             # print('col1a1_th_path: ' + col1a1_th_path)
             #coloc path corresponding to image:
-            print('col1a1 shape:' + str(col1a1.shape))
+            # col1a1 = Image.fromarray((col1a1 * 255).astype(np.uint8))
+            # width, height = col1a1.size
+
+            # left = width * 0.1
+            # right = width - left
+            # top = 0
+            # bottom = height
+            # im_final = col1a1.crop((left, top, right, bottom))
+            # left = 0
+            # right = width
+            # top = height * 0.1
+            # bottom = height - top
+            # col1a1 = col1a1.crop((left, top, right, bottom))
+
+            # print('col1a1 shape:' + str(col1a1.shape))
             # plt.imshow(col1a1)
-            # col1a1_img = Image.fromarray(np.uint8(col1a1 * 255))
             # col1a1_img.save(save_path + '/' + filename + '_TH.png')
             cv2.imwrite(save_path + '/' + filename + '_TH.png', col1a1)
+            # col1a1.save(save_path + '/' + filename + '_TH.png')
+
+            # cv2.imwrite(save_path + '/' + filename + '_TH.png', col1a1)
             print('thresholded col1a1 saved at '+ save_path)
-        if 'hunu' in filename and not 'TH' in filename:
+        if 'hunu' in filename and 'Segm' in filename and not 'TH' in filename:
             print('file_path = ' + filename)
             #get filename
             # print('hunu_segm name: ' + file_path)
