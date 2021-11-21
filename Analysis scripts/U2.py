@@ -30,7 +30,27 @@ for device in tf.config.experimental.list_physical_devices('GPU'):
     tf.config.experimental.set_memory_growth(device, True)
 from sklearn.preprocessing import MinMaxScaler
 scaler = MinMaxScaler()
+import math
+from datetime import date
 
+run_date = date.today()
+from keras import backend as K
+def recall_m(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
+    recall = true_positives / (possible_positives + K.epsilon())
+    return recall
+
+def precision_m(y_true, y_pred):
+    true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
+    predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
+    precision = true_positives / (predicted_positives + K.epsilon())
+    return precision
+
+def f1_m(y_true, y_pred):
+    precision = precision_m(y_true, y_pred)
+    recall = recall_m(y_true, y_pred)
+    return 2*((precision*recall)/(precision+recall+K.epsilon()))
 
 def dice_coef(y_true, y_pred, smooth=1):
     """
@@ -63,11 +83,13 @@ def save_random_im(X_train, Y_train):
     mask = Image.fromarray(mask)
     mask.save("random_mask.png")
 
-TRAIN_PATH = sys.argv[1]
-MASK_PATH = sys.argv[2]
+# TRAIN_PATH = sys.argv[1]
+# MASK_PATH = sys.argv[2]
 
-IMG_PROP = int(sys.argv[3])
-IMG_HEIGHT = IMG_WIDTH = IMG_PROP
+# print(TRAIN_PATH)
+# print(MASK_PATH)
+
+# IMG_PROP = int(sys.argv[3])
 # IMG_HEIGHT = int(sys.argv[3])
 # IMG_WIDTH = int(sys.argv[4])
 
@@ -76,89 +98,62 @@ IMG_CHANNELS = 3
 # TRAIN_PATH = '/home/inf-54-2020/experimental_cop/Train_H_Final/Train_by_batches/Images/'
 # MASK_PATH = '/home/inf-54-2020/experimental_cop/Train_H_Final/Masks_by_batches/Masks/'
 
+TRAIN_PATH = "/home/inf-54-2020/experimental_cop/Train_H_Final/Train_by_batches/Images/"
+
+MASK_PATH = "/home/inf-54-2020/experimental_cop/Train_H_Final/Masks_by_batches/Masks/"
+
+IMG_PROP = 512
+IMG_PROP = int(sys.argv[1])
+
+IMG_HEIGHT = IMG_WIDTH = IMG_PROP
+# IMG_HEIGHT = int(sys.argv[3])
+# IMG_WIDTH = int(sys.argv[4])
+IMG_CHANNELS = 3
+# batch_size = 32
+batch_size = int(sys.argv[2])
+
+# TRAIN_PATH = '/home/inf-54-2020/experimental_cop/Train_H_Final/Train_by_batches/Images/'
+# MASK_PATH = '/home/inf-54-2020/experimental_cop/Train_H_Final/Masks_by_batches/Masks/'
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import random
+# img_patch = gen_patches(img, split_width, split_height)
+
 X_train = import_images(TRAIN_PATH, IMG_HEIGHT,IMG_WIDTH, 3)
 Y_train = import_masks(MASK_PATH, IMG_HEIGHT,IMG_WIDTH)
+#Normalize images
 
-print("dtype X:", X_train.dtype)
-print("dtype Y:", Y_train.dtype)
+# batch_size=128
+all_train_imgs = len(os.listdir(TRAIN_PATH))
 
-# def Datascaling(data):
-#     info = np.iinfo(data.dtype) # Get the information of the incoming image type
-#     print(info)
-#     data = data.astype(np.float64) / info.max # normalize the data to 0 - 1
-#     data = 255 * data # Now scale by 255
-#     print(data[:10])
-#     #scaled_data = data.astype(np.uint8)
-#     return(data)
+def calculate_spe(y):
+  return int(math.ceil((1. * y) / batch_size))
+steps_per_epoch = calculate_spe(all_train_imgs)
 
-# X_train = Datascaling(X_train)
-# Y_train = Datascaling(Y_train)
-
-#need to transform to float64, otherwise gives an error when fitting the model!
-# print(X_train[:10])
-# print(Y_train[:10])
-
+X_train = X_train / 255.
+Y_train = Y_train / 255.
 
 X_train = X_train.astype(np.float64)
 Y_train = Y_train.astype(np.float64)
 
+print("dtype X:", X_train.dtype)
+print("dtype Y:", Y_train.dtype)
+
+
 print(X_train[:5])
 print(Y_train[:5])
 
-# print(X_train.dtype)
-# print(Y_train.dtype)
-
-# print(type(X_train))
-# print(type(Y_train))
-#Y_train = np.expand_dims(Y_train, 3)
-
-#need to transform to float32, otherwise gives an error!
-# X_train = np.array(X_train, dtype=np.float32)
-# Y_train = np.array(list(Y_train[:, 1]), dtype=np.float32)
-
-
-# X_train = X_train.astype(np.uint8)*255
-# Y_train = Y_train.astype(np.uint8)*255
-
-
-# random_no = random.randint(0, len(X_train))
-# im1 = X_train[random_no]
-# im = np.array(Image.fromarray((im1).astype(np.uint8)))
-# im = Image.fromarray(im)
-# im.save("random_im.png")
 
 
 print(X_train.shape)
 print(Y_train.shape)
 
-# train_ids = next(os.walk(TRAIN_PATH))[1]
-
-# X_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS), dtype=np.uint8)
-# Y_train = np.zeros((len(train_ids), IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-
-# print('Resizing training images and masks')
-# for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):   
-#     path = TRAIN_PATH + id_
-#     img = imread(path + '/images/' + id_ + '.png')[:,:,:IMG_CHANNELS]  
-#     img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-#     X_train[n] = img  #Fill empty X_train with values from img
-#     mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-#     for mask_file in next(os.walk(path + '/masks/'))[2]:
-#         mask_ = imread(path + '/masks/' + mask_file)
-#         mask_ = np.expand_dims(resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant',  
-#                                       preserve_range=True), axis=-1)
-#         mask = np.maximum(mask, mask_)  
-            
-#     Y_train[n] = mask   
-
-# print('Done!')
 
 
 
 
 #Build the model
 inputs = tf.keras.layers.Input((IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
-s = tf.keras.layers.Lambda(lambda x: x / 255)(inputs)
+s = tf.keras.layers.Lambda(lambda x: x / 255.)(inputs)
 
 #Contraction path
 c1 = tf.keras.layers.Conv2D(16, (3, 3), activation='relu', kernel_initializer='he_normal', padding='same')(s)
@@ -213,226 +208,108 @@ c9 = tf.keras.layers.Conv2D(16, (3, 3), activation='relu', kernel_initializer='h
 outputs = tf.keras.layers.Conv2D(1, (1, 1), activation='sigmoid')(c9)
  
 model = tf.keras.Model(inputs=[inputs], outputs=[outputs])
-from focal_loss import BinaryFocalLoss
+
+
 #model = tf.keras.Model(inputs=[inputs], outputs=[outputs])
-model.compile(optimizer=Adam(learning_rate = 0.00001), loss=[dice_coef_loss], 
+model.compile(optimizer=Adam(learning_rate = 1e-4), loss=[dice_coef_loss], 
               #BinaryFocalLoss(gamma=2)
-              metrics=[dice_coef])
+              metrics=[dice_coef, recall_m, precision_m, f1_m])
 
 model.summary()
 
-cp_save_path1 = './Full_Model_5ep_standard_metrics.h5'
-cp_save_path2 = './Full_Model_10ep_standard_metrics.h5'
-cp_save_path3 = './Full_Model_25ep_standard_metrics.h5'
 
-cp_save_path1 = './Full_Model_5ep_dice_focal_s128.h5'
-cp_save_path2 = './Full_Model_10ep_dice_focal_s128.h5'
-cp_save_path3 = './Full_Model_25ep_dice_focal_s128.h5'
 
-def plot_training(save_path, history, n, IMG_PROP):
-    # loss = history.history['loss']
-    # val_loss = history.history['val_loss']
-    # epochs = range(1, len(loss) + 1)
-    # plt.plot(epochs, loss, 'y', label='Training loss')
-    # plt.plot(epochs, val_loss, 'r', label='Validation loss')
-    # plt.title('Training and validation loss')
-    # plt.xlabel('Epochs')
-    # plt.ylabel('Loss')
-    # plt.legend()
-# summarize history for accuracy
-
-    # plt.plot(history.history['accuracy'])
-    # plt.plot(history.history['val_accuracy'])
-    # plt.title('model accuracy')
-    # plt.ylabel('accuracy')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test'], loc='upper left')
-    
-    # figname = save_path + 'Dice_Accuracy_' + str(n) + '_ps_' + str(IMG_PROP) + '_1_Full_model_s512.png'
-    
-    plt.plot(history.history['dice_coef'])
-    plt.plot(history.history['val_dice_coef'])
-    plt.title('model accuracy dice')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
-
-    figname = save_path + 'AccuracyDice_' + str(n) + '_ps_' + str(IMG_PROP) + '_1_owndat_model_s512.png'
-    # plt.show()
-    # plt.savefig(figname)
-    # # summarize history for loss
-    # plt.plot(history.history['loss'])
-    # plt.plot(history.history['val_loss'])
-    # plt.title('model loss')
-    # plt.ylabel('loss')
-    # plt.xlabel('epoch')
-    # plt.legend(['train', 'test'], loc='upper left')
-    # # plt.show()
-    # figname = save_path + 'DBF_Loss_' + str(n) + '_ps_' + str(IMG_PROP) +  '_2_Full_model_s512.png'
+def plot_training(save_path, history, n, IMG_PROP, bs, date):
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+    epochs = range(1, len(loss) + 1)
+    plt.plot(epochs, loss, 'y', label='Training loss')
+    plt.plot(epochs, val_loss, 'r', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
     plt.show()
-
+    figname = save_path + str(n) + '_ps_' + str(IMG_PROP) + '_' + bs +'_' + str(date) + '_Plot_loss_Dice.png'
     plt.savefig(figname)
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss dice')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['Train_Accuracy', 'Validation_Accuracy', 'Train_Loss', 'Validation_Los'], loc='upper left')
+    
+    acc = history.history['dice_coef']
+    #acc = history.history['accuracy']
+    val_acc = history.history['val_dice_coef']
+    #val_acc = history.history['val_accuracy']
+    
+    plt.plot(epochs, acc, 'y', label='Training Dice')
+    plt.plot(epochs, val_acc, 'r', label='Validation Dice')
+    plt.title('Training and validation Dice')
+    plt.xlabel('Epochs')
+    plt.ylabel('Dice')
+    plt.legend()
     plt.show()
-
-    figname = save_path + 'DiceLoss_' + str(n) + '_ps' + str(IMG_PROP) + '_1_owndat_ForPlots.png'
+    figname = save_path + str(n) + '_ps_' + str(IMG_PROP) + '_' + bs +'_' + str(date) + '_Plot_Accuracy_Dice.png'
     plt.savefig(figname)
 
+    i=+1
 
-    # jc = history.history['dice_coef']
-    # #acc = history.history['accuracy']
-    # val_jc = history.history['val_dice_coef']
-    # #val_acc = history.history['val_accuracy']
-    
-    # plt.plot(epochs, jc, 'y', label='Training Dice Coeff.')
-    # plt.plot(epochs, val_jc, 'r', label='Validation Dice Coeff.')
-    # plt.title('Training and validation Jacard')
-    # plt.xlabel('Epochs')
-    # plt.ylabel('Dice Coefficient')
-    # plt.legend()
     
 
 print('Done.')
 
 ################################
 #Modelcheckpoint
-checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path1, verbose=1, save_best_only=True)
-tb_cb = tf.keras.callbacks.TensorBoard(log_dir='logs', profile_batch=0)
+# checkpointer = tf.keras.callbacks.ModelCheckpoint(cp_save_path1, verbose=1, save_best_only=True)
+# tb_cb = tf.keras.callbacks.TensorBoard(log_dir='logs', profile_batch=0)
 
 def noop():
     pass
 
-tb_cb._enable_trace = noop
+# tb_cb._enable_trace = noop
+cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/unet_models/ALL_no_gen_25ep_dice_' + str(IMG_PROP) + '_' + str(run_date) +'_lrsch_' + str(batch_size) +'.h5'
 
 callbacks = [
-        tf.keras.callbacks.EarlyStopping(patience=2, monitor='val_loss'),
+        tf.keras.callbacks.EarlyStopping(patience=2, monitor='val_loss',restore_best_weights=True),
         tf.keras.callbacks.TensorBoard(log_dir='logs')]
 
 
-# batch_size = 
-# steps_per_epoch = X_train.shape[0] // batch_size
+save_path = '/home/inf-54-2020/experimental_cop/scripts/plots_unet/'
 
-# from sklearn.model_selection import train_test_split
+bs = batch_size
 
-# # Split the data
-# X_train, X_valid, Y_train, Y_valid = train_test_split(X_train, X_train, test_size=0.3, shuffle= True)
+epochs = 25
 
+history = model.fit(X_train, Y_train, validation_split=0.3, steps_per_epoch=steps_per_epoch, batch_size=batch_size, epochs=epochs, callbacks=[callbacks])
+# history_bs128_ep25 = model.fit(X_train, Y_train, validation_split=0.3, batch_size=batch_size, epochs=25, callbacks=callbacks)
+print(history.history)
 
-#train-val split of 0.7-0.3
-save_path = '/home/inf-54-2020/experimental_cop/scripts/Plots_Unet/'
-# # batch size 128
-# ###############
-# Patchsize= "%s/augmented_image_%s.png" %(img_augmented_path, i)
-# os.mkdir(n_path)  #create a new dir with the file name 
-# p=save_path.rsplit('/',2)[0]
-# print(p)
-
-# history_bs128_ep5 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=128, epochs=5, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_ps' + str(IMG_PROP) + '_bs128_ep5.h5'
-# model.save(cp_save_path)
-
-# history_bs128_ep10 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=128, epochs=10, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_ps' + str(IMG_PROP) + '_bs128_ep10.h5'
-# model.save(cp_save_path)
-
-all_dat = int(X_train.shape[0])
-print(all_dat)
-
-import math
-batch_size=128
-trainingsize = round(all_dat * 0.7)
-print(trainingsize)
-validate_size = all_dat * 0.3
-def calculate_spe(y):
-  return int(math.ceil((1. * y) / batch_size))
-steps_per_epoch = calculate_spe(trainingsize)
-validation_steps = calculate_spe(validate_size)
-
-
-#earlier run with BF loss, test the models: cp_save_path = './Plots_Unet/Owndat_dice_BFloss_ps' + str(IMG_PROP) + '_bs128_ep3.h5'
-
-# history_bs128_ep3 = model.fit(X_train, Y_train, validation_split=0.3, batch_size=batch_size, epochs=3, callbacks=callbacks)
-# cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/Plots_Unet/Alldat_dice_ps' + str(IMG_PROP) + '_bs128_ep3.h5'
-# model.save(cp_save_path)
-# history_bs128_ep5 = model.fit(X_train, Y_train, validation_split=0.3, batch_size=batch_size, epochs=5, callbacks=callbacks)
-# cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/Plots_Unet/Alldat_dice_ps' + str(IMG_PROP) + '_bs128_ep5.h5'
-# #cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_ps' + str(IMG_PROP) + '_bs128_ep25.h5'
-# model.save(cp_save_path)
-history_bs128_ep10 = model.fit(X_train, Y_train, validation_split=0.3, batch_size=batch_size, epochs=10, callbacks=callbacks)
-cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/Plots_Unet/Alldat_10ep_dice_' + str(IMG_PROP) + '_bs128_ep10.h5'
+cp_save_path = '/home/inf-54-2020/experimental_cop/scripts/unet_models/ALL_no_gen_25ep_dice_' + str(IMG_PROP) + '_' + str(bs) +'_' + str(run_date) +'_lrsch_' + str(batch_size) + '.h5'
 #cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_ps' + str(IMG_PROP) + '_bs128_ep25.h5'
 model.save(cp_save_path)
 
-plot_training(save_path, history_bs128_ep10, 'bs128_ep10_',str(IMG_PROP))
-# history_bs128_ep50 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=128, epochs=50, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_ps' + str(IMG_PROP) + '_bs128_ep50.h5'
-# model.save(cp_save_path)
-# plot_training(save_path, history_bs128_ep50, 'bs128_ep50', str(IMG_PROP))
+plot_training(save_path, history, 'bs128_ep25_',str(IMG_PROP), str(batch_size), str(run_date))
+import pandas as pd    
 
-# # batch size 32
-# ###############
-# history_bs32_ep5 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=32, epochs=5, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_ps' + str(IMG_PROP) + '_bs32_ep5.h5'
-# plot_training(history_bs32_ep5, 'bs32_ep5')
-# model.save(cp_save_path)
-# # plot_training(history1, 'ep5')
-# history_bs32_ep10 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=32, epochs=10, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_s512_bs32_ep10.h5'
-# plot_training(history_bs32_ep10, 'bs32_ep10')
-# model.save(cp_save_path)
-# batch_size=32
-# trainingsize = round(all_dat * 0.7)
-# print(trainingsize)
-# validate_size = all_dat * 0.3
-# def calculate_spe(y):
-#   return int(math.ceil((1. * y) / batch_size))
-# steps_per_epoch = calculate_spe(trainingsize)
-# validation_steps = calculate_spe(validate_size)
+unet_history_df = pd.DataFrame(history.history) 
+    
+with open('trad_unet_history_df' + str(IMG_PROP) + '_' +str(run_date) + '_' + str(batch_size) + '.csv', mode='w') as f:
+    unet_history_df.to_csv(f)
 
-# history_bs32_ep25 = model.fit(X_train, Y_train, validation_split=0.3, batch_size=batch_size, epochs=100, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_s512_bs32_ep100.h5'
-# plot_training(save_path, history_bs32_ep25, 'bs32_ep100',str(IMG_PROP))
-# model.save(cp_save_path)
-# history_bs32_ep50 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=32, epochs=50, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_s512_bs32_ep50.h5'
-# model.save(cp_save_path)
-# # plot_training(history1, 'ep5')
-# plot_training(history_bs32_ep50, 'bs32_ep50')
+###evaluation
+test_path_p = '/home/inf-54-2020/experimental_cop/Train_H_Final/Test_set/Images/'
+test_mask_p = '/home/inf-54-2020/experimental_cop/Train_H_Final/Test_set/Masks/'
+# Test_ims_masks = import_kaggledata(data_path, IMG_PROP, IMG_PROP, 3)
+X_test = import_images(test_path_p, IMG_PROP, IMG_PROP, 3)
+Y_test = import_masks(test_mask_p, IMG_PROP, IMG_PROP)
+# X_train = Test_ims_masks[0]
+# Y_train = Test_ims_masks[1]
 
+print(X_test.shape)
+print(Y_test.shape)
 
-# # batch size 256
-# ###############
-# # plot_training(history2, 'ep10')
-# history_bs32_ep5 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=256, epochs=5, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_s512_bs256_ep5.h5'
-# model.save(cp_save_path)
-# # plot_training(history1, 'ep5')
-# history_bs32_ep10 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=256, epochs=10, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_s512_bs256_ep10.h5'
-# model.save(cp_save_path)
-# batch_size=256
-# trainingsize = round(all_dat * 0.7)
-# print(trainingsize)
-# validate_size = all_dat * 0.3
-# def calculate_spe(y):
-#   return int(math.ceil((1. * y) / batch_size))
-# steps_per_epoch = calculate_spe(trainingsize)
-# validation_steps = calculate_spe(validate_size)
+X_test = X_test/255.
+Y_test = Y_test/255.
 
-# history_bs32_ep25 = model.fit(X_train, Y_train, validation_split=0.3, batch_size=batch_size, epochs=25, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_s512_bs256_ep100.h5'
-# model.save(cp_save_path)
-# plot_training(save_path, history_bs32_ep25, 'bs256_ep100',str(IMG_PROP))
-
-# history_bs32_ep50 = model.fit(X_train, Y_train, validation_data=(X_valid, Y_valid), batch_size=256, epochs=50, callbacks=callbacks)
-# cp_save_path = './Plots_Unet/Full_Model_5ep_dice_diceloss_s512_bs256_ep50.h5'
-# model.save(cp_save_path)
-# # plot_training(history1, 'ep5')
-# plot_training(history_bs32_ep50, 'bs256_ep50', str(IMG_PROP))
-
-
+X_test = X_test.astype(np.float64)
+Y_test = Y_test.astype(np.float64)
+# evaluate the model
+# loss, accuracy, precision, recall, f1 = model.evaluate(X_test, Y_test, verbose=0)
+results = model.evaluate(X_test, Y_test, verbose=0)
+print(results)
