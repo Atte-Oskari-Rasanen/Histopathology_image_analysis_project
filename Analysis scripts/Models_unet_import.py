@@ -5,6 +5,7 @@ Created on Tue Nov 16 00:46:01 2021
 """
 
 """
+From: https://github.com/bnsreenu/python_for_microscopists
 Attention U-net:
 https://arxiv.org/pdf/1804.03999.pdf
 Recurrent residual Unet (R2U-Net) paper
