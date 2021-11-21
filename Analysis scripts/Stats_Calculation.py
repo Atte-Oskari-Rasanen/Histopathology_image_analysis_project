@@ -5,14 +5,6 @@ Created on Sat Nov  6 22:34:22 2021
 
 @author: atte
 """
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Sep 23 15:01:36 2021
-
-@author: atte
-"""
 import numpy as np
 
 import cv2
@@ -92,36 +84,13 @@ def Global_otsu(img):
     (T, threshInv) = cv2.threshold(im_blur, thresh, 255,
     	cv2.THRESH_BINARY_INV)
     return(threshInv)
-# ws_coloc_path = ['/home/inf-54-2020/experimental_cop/batch6/batch6_processed_ws/Coloc_DAB_15s_hunu_segm.png',
-#                 '/home/inf-54-2020/experimental_cop/batch6/batch6_processed_ws/Coloc_DAB_30s_hunu_segm.png',
-#                 '/home/inf-54-2020/experimental_cop/batch6/batch6_processed_ws/Coloc_DAB_120s_hunu_segm.png'] 
-# ws_hunu_path = ['/home/inf-54-2020/experimental_cop/batch6/batch6_processed_ws/DAB_15s_hunu_segm.pngoutlines.png',
-#                 '/home/inf-54-2020/experimental_cop/batch6/batch6_processed_ws/DAB_30s_hunu_segm.pngoutlines.png',
-#                 '/home/inf-54-2020/experimental_cop/batch6/batch6_processed_ws/DAB_120s_hunu_segm.pngoutlines.png'] 
-
-
-# hunu_cells = sys.argv[1]
-# coloc_cells = sys.argv[2]
-# hunu_cells = sys.argv[1]
-# coloc_cells = sys.argv[2]
-
-# ws_hunu_path = glob.glob(hunu_cells)
-# ws_coloc_path = glob.glob(ws_coloc_path)
-# print(ws_hunu_path)
-#iterate over the colocalised images directory and save the locations into a list from which 
-#the images are retrieved one by one:
-
-
-# dictionary = dict(zip(ws_hunu_path, ws_coloc_path))
-
-# '/home/inf-54-2020/experimental_cop/batch6/batch6_processed_ws/'
 
 
 segm_TH_dirs = []
 all_ims_paths = []
 
-# main_dir = sys.argv[1]
-main_dir = '/home/atte/Documents/PD_images/batch8_retry/18/18/Deconvolved_ims'
+main_dir = sys.argv[1]
+# main_dir = '/home/atte/Documents/PD_images/batch8_retry/Deconvolved_ims'
 
 #get all image paths:
 for (dirpath, dirnames, filenames) in os.walk(main_dir):
@@ -144,22 +113,12 @@ for f in all_ims_paths:
         filename = os.path.basename(file_path)
         # print(filename)
 
-# h_c_list = []
-# hunu_nuclei_areas = []
-# col1a1_areas = []
-# full_im_area = []
-# coloc_list = []
-# unit_list = []
-# filenames = []
 
 hunu_stats_dict = {} #the value part contains: [filename, nuclei A, nuclei N, total_A]
 hunu_coloc_stats_dict = {} 
 
 from skimage.filters import threshold_otsu, rank
 
-#gather the information and calculate the stats (no of nuclei and total area they take up)
-# for the hunu image with all nuclei and for the colocalised image with the nuclei
-# colocalised with col1a1 as well as col1a1 area.
 
 #The first set of loops focuses on extracting the info from hunu images (pure hunu and the
 # colocalised ones). The second loop goes through the col1a1 ones. They should be matched to the
@@ -197,7 +156,7 @@ for root, subdirectories, files in scandir.walk(main_dir):
                     # print('IM TO OPEN:' + im_path)
                     im_gray = cv2.imread(im_path,0)
                     # im_th = Global_otsu(im_gray)
-                    im_gray = cv2.bitwise_not(im_gray)
+                    # im_gray = cv2.bitwise_not(im_gray)
 
                     Stats = calculations_hunu(im_gray)
                     hunu_coloc_stats_dict[filename]=Stats
@@ -224,8 +183,6 @@ for root, subdirectories, files in scandir.walk(main_dir):
                     Stats = calculations_hunu(im_gray)
                     hunu_stats_dict[filename]=Stats
 
-#Now I have a dictionary with the key being the imagename (pure hunu image or coloc one) and values
-#containing the relevant info (Nuclei Area, Nuclei count and total Area of the image-this last one is a sanity check)
 
 #Iterate over the COL1A1 images, count the area of each one's stain, then match to the dict key of the hunu_coloc dict
 
@@ -272,11 +229,13 @@ ids = []
 
 
 Ahunucol1_Acol1_I_Ahunus = []
+Acol1_I_Nhunus = []
 Acol1_I_Ahunus = []
 Total_hunu_cells_list = []
 hunu_colocs = []
 N_hunu_coloc_I_total_hunus = []
 A_col1_I_total_hunus = []
+A_col1_I_N_hunus = []
 IDs = []
 
 Acol1_I_Ahunus = []
@@ -299,39 +258,33 @@ for key_hunu, h_v in hunu_stats_dict.items():
                 values_hunu = hunu_stats_dict[key_hunu]
                 print('HUNU A: ' + str(values_hunu[0]))
                 # #I-symbol used as division
-                # #Area of hunu-col1a1+ cells / Area of all hunu cells
-                # Ahunucol1_Acol1_I_Ahunu = values_hunu_coloc[0] / values_hunu[0]
-                # Ahunucol1_Acol1_I_Ahunus.append(Ahunucol1_Acol1_I_Ahunu)
-                # stats.append(Ahunucol1_Acol1_I_Ahunu)
+                #Area of hunu-col1a1+ cells / Area of all hunu cells
+                Ahunucol1_Acol1_I_Ahunu = values_hunu_coloc[0] / values_hunu[0]
+                Ahunucol1_Acol1_I_Ahunus.append(Ahunucol1_Acol1_I_Ahunu)
+                stats.append(Ahunucol1_Acol1_I_Ahunu)
                 
-                #Area of col1a1+ / Area of all hunu cells
+                #Area of col1a1+ / Area of all hunu cells -- A(COL1A1+)/A(HUNU+)
                 Acol1_I_Ahunu = values_col1[0] / values_hunu[0]
                 Acol1_I_Ahunus.append(Acol1_I_Ahunu)
                 stats.append(Acol1_I_Ahunu)
+
+                
+                #A(COL1A1+HUNU+)/N(HUNU+)
+                Acol1_I_Nhunu = values_hunu_coloc[0] / values_hunu[1]
+                Acol1_I_Nhunus.append(Acol1_I_Nhunu)
+                stats.append(Acol1_I_Nhunu)
 
                 #All hunu cells
                 Total_hunu_cells = values_hunu[1]
                 Total_hunu_cells_list.append(Total_hunu_cells)
                 stats.append(Total_hunu_cells)
+                
+                #A(COL1A1+)/N(HUNU+)
+                A_col1_I_N_hunu = values_col1[0] / values_hunu[1]
+                A_col1_I_N_hunus.append(A_col1_I_N_hunu)
 
-                #Hunu cells colocalised with col1a1:
-                hunu_coloc = values_hunu_coloc[1]
-                hunu_colocs.append(hunu_coloc)
-                stats.append(hunu_coloc)
-
-                #coloc hunu cells / all hunu
-                N_hunu_coloc_I_total_hunu = values_hunu_coloc[1] / values_hunu[1]
-                N_hunu_coloc_I_total_hunus.append(N_hunu_coloc_I_total_hunu)
-                stats.append(N_hunu_coloc_I_total_hunu)
-
-                #Area of col1a1 divided by number of hunu cells:
-                A_col1_I_total_hunu = values_col1[0] /  values_hunu[1]
-                A_col1_I_total_hunus.append(A_col1_I_total_hunu)
-                stats.append(A_col1_I_total_hunu)
                 final_info[ID]=stats
-                IDs.append(ID)
-                #Total area taken up by N HUNU+ cells
-                #stats.append(hunu_stats_dict[])
+
 
 # df = pd.DataFrame(pd.np.empty((0, 7)))    
 import pandas as pd
@@ -340,13 +293,10 @@ print(final_info)
 
 filenames = final_info.items()
 All_stats = list(filenames)
-df = pd.DataFrame(list(zip(IDs, Acol1_I_Ahunus, A_col1_I_total_hunus, Total_hunu_cells_list)))
+df = pd.DataFrame(list(zip(ids, Ahunucol1_Acol1_I_Ahunus, Acol1_I_Nhunus, Acol1_I_Ahunus, A_col1_I_N_hunus, Total_hunu_cells_list)))
+df.columns = [ "Animal_ID", "A(COL1A1+HUNU+)/A(HUNU+)", "A(COL1A1+HUNU+)/N(HUNU+)", "A(COL1A1+)/A(HUNU+)", "A(COL1A1+)/N(HUNU+)", "N(HUNU+)"]
 
-# df = pd.DataFrame(list(final_info.items()),columns = [ "A(HUNU+COL1A1+) / A(HUNU+)", "A(COL1A1+)/A(HUNU+)", "N(HUNU+)", "N(HUNU+COL1A1+)", "N(HUNU+COL1A1+)/N(HUNU+)", "A(COL1a1)/N(HUNU+)"]) 
-# We can keep (i) A(COL1A1+)/A(HUNU+), (ii) A(COL1a1)/N(HUNU+) and (iii) N(HUNU+)
-# df = pd.DataFrame(All_stats)
-# df.columns = [ "Animal_ID", "A(HUNU+COL1A1+) / A(HUNU+)", "A(COL1A1+)/A(HUNU+)", "N(HUNU+)", "N(HUNU+COL1A1+)", "N(HUNU+COL1A1+)/N(HUNU+)", "A(COL1a1)/N(HUNU+)"]
-df.columns = [ "Animal_ID", "A(COL1A1+)/A(HUNU+)", "A(COL1a1)/N(HUNU+)", "N(HUNU+)"]
+df = df.drop_duplicates()
 
 
 # output_dir_results = "/home/atte/Desktop/Testing_coloc"
