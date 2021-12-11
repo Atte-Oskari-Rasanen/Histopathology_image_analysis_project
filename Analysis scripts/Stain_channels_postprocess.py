@@ -23,6 +23,26 @@ from skimage.feature import peak_local_max
 
 import sys
 
+# Load image, grayscale, Otsu's threshold
+h_path = '/home/atte/Documents/PD_images/batch6/DAB15/DAB_15s_hunu_segm.png' 
+h_path = '/home/atte/Documents/PD_images/batch6/10ep_Alldat_kaggleDice_S_DAB_Hunu_15sec_512.png'
+h_path = '/home/atte/Documents/PD_images/batch6/DAB15/u2_5ep_bs128_dice_DAB_15sec_512.png'
+h_path ='/home/atte/Desktop/quick/U2_ep3_Alldat_bs128_dice_DAB_15sec_s736.png'
+# h_path = '/home/inf-54-2020/experimental_cop/All_imgs_segm/u2_5ep_bs128_dice_DAB_15sec_512.png'
+c_path = '/home/atte/Documents/PD_images/batch6/DAB15/DAB_15sec_col1a1.png'
+c_path = '/home/atte/Desktop/quick/col1a1_DAB15sec.png'
+# c_path = '/home/inf-54-2020/experimental_cop/batch6/DAB_15sec_col1a1.png'
+
+# h_path = '/home/atte/Documents/PD_images/batch6/DAB30/DAB_30s_hunu_segm.png'
+# c_path = '/home/atte/Documents/PD_images/batch6/DAB30/DAB_30sec_col1a1.png'
+
+# h_path = '/home/atte/Documents/PD_images/batch6/DAB120/DAB_120s_hunu_segm.png'
+# c_path = '/home/atte/Documents/PD_images/batch6/DAB120/DAB_120sec_col1a1.png'
+
+# h_path = '/home/inf-54-2020/experimental_cop/All_imgs_segm/segm_batch6/DAB_15s_D_segm.png'
+# c_path = '/home/inf-54-2020/experimental_cop/batch6/DAB_15sec_col1a1.png'
+# outp = '/home/inf-54-2020/experimental_cop/batch6/batch6_coloc/'
+outp = '/home/atte/Documents/PD_images/batch6/'
 
 #for the images segmented with script U2.py need to invert colours
 from skimage.morphology import disk
@@ -40,6 +60,15 @@ import scandir
 #and apply hunu_ch_import_TH on it. Find the corresponding col1a1 image , threshold
 import PIL.ImageOps    
 
+def crop(img):
+    _,thresh = cv2.threshold(img,1,255,cv2.THRESH_BINARY)
+    thresh = cv2.bitwise_not(thresh)
+    # plt.imshow(thresh)
+    contours,hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+    cnt = contours[0]
+    x,y,w,h = cv2.boundingRect(cnt)
+    crop = img[y:y+h,x:x+w]
+    return(crop)
 def crop_image(image, angle):
     h, w = image.shape
     tan_a = abs(np.tan(angle * np.pi / 180))
@@ -63,6 +92,8 @@ def TH_local_otsu(img_p,radius, sigma):
 
     print(binary.dtype)
     binary = binary.astype(np.uint8)
+    binary = crop_image(binary,2)
+
     # binary = cv2.bitwise_not(binary)
     # plt.imshow(binary)
     binary = Image.fromarray(np.uint8(binary * 255))
@@ -77,7 +108,7 @@ def hunu_ch_import_TH(im_path):
     kernel = np.ones((5,5),np.uint8)
 
     img = cv2.imread(im_path,0)
-    img = crop_image(img,2)
+    img = crop_image(img,5)
     thresh = threshold_otsu(img)
     #add extra on top of otsu's thresholded value as otsu at times includes background noise
     thresh = thresh # - thresh * 0.035   #need to remove a bit from the standard threshold and found this constant to be appropriate
@@ -100,13 +131,14 @@ def hunu_ch_import_TH(im_path):
     # img = Image.fromarray(np.uint8(binary * 255))
 
     # img.save(outp + 'TEST_'+ filename_h)
+    # threshInv = crop_image(threshInv,2)
+    threshInv = np.asarray(threshInv)
 
     return threshInv
 #cv2.imwrite('/home/atte/Documents/PD_images/batch6/t.png', threshInv)
 
 def col1a1_ch_import_TH(im_path):
     img = cv2.imread(im_path,0)
-    img = crop_image(img,2)
     thresh = threshold_otsu(img)
     #add extra on top of otsu's thresholded value as otsu at times includes background noise
     thresh = thresh #- thresh * 0.035   #need to remove a bit from the standard threshold and found this constant to be appropriate
@@ -124,7 +156,7 @@ def col1a1_ch_import_TH(im_path):
     threshInv = cv2.dilate(threshInv,kernel,iterations = 1)
     threshInv = cv2.bitwise_not(threshInv)
     threshInv = cv2.dilate(threshInv,kernel,iterations = 1)
-
+    threshInv = crop_image(threshInv,2)
     return threshInv
 #cv2.imwrite('/home/atte/Documents/PD_images/batch6/dab_binary_col1a1.png', threshInv)
 def colocalise(hunu_im, col1a1_im):
@@ -237,6 +269,7 @@ for f in all_ims_paths:
             # print('col1a1 file path: '+ file_path)
             # col1a1 = TH_local_otsu(file_path,30,5)
             col1a1= col1a1_ch_import_TH(file_path)
+
             # print('col1a1 shape: ' + str(col1a1.shape))
             splt_char = "/"
             # nth = 4
@@ -282,6 +315,7 @@ for f in all_ims_paths:
             #get filename
             # print('hunu_segm name: ' + file_path)
             hunu = TH_local_otsu(file_path,30,1)
+
             # print(hunu[:1])
             # watershedded_hunu = watershedding(file_path, hunu)
             n = len(file_path.split('/')) #get number of elements in list created by splitting file path
