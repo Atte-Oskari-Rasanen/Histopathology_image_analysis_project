@@ -194,11 +194,3 @@ for generating the violin plots for the data. The data plotted on the script ser
 data is plotted.
 
 
-## More resources
-
-Point interested users to any related literature and/or documentation.
-
-
-## About
-
-Explain who has contributed to the repository. You can say it has been part of a class you've taken at Tilburg University.
