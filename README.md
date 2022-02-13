@@ -1,3 +1,6 @@
+
+Note: This is a draft repo which includes a variety scripts and things I experimented with. The "final product" (upon submission, but still under development) is found at https://github.com/Atte-Oskari-Rasanen/COL1A1_quantification
+
 # Absolute quantification of COL1A1+ cells after transplantation to the rat striatum 
 
 ## Motivation
